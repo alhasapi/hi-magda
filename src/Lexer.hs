@@ -25,6 +25,7 @@ langDef =
                                      , "null"
                                      , "this"
                                      , "is"
+                                     , "import"
                                      ]          
            , Token.reservedOpNames = [ ";"
                                      , ":="

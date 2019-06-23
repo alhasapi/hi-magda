@@ -20,10 +20,11 @@ main = do args <- getArgs
     evalFile :: String -> IO (Config)
     evalFile f = do p <- parseFromFile program f
                     case p of
-                      Left x   -> do print x
-                                     return initConfig
-                      Right p' -> do (cc@(Config a b c d),_) <- pure $ eval (evalProg p') initConfig --naming config fields forces evaluation
+                      Left x   -> error $ show x
+                      Right p' -> do initMixins <- evalImports (programImports p')
+                                     (cc@(Config a b c d),_) <- pure $ eval (evalProg p' {programMixins=initMixins}) initConfig --naming config fields forces evaluation
                                      return cc
+
     parseParam :: String -> Maybe String
     parseParam ('-':'-':p) = Just p
     parseParam _ = Nothing
@@ -31,6 +32,17 @@ main = do args <- getArgs
     runParam :: String -> IO ()
     runParam "version" = putStrLn $ version ++ license
     runParam x = putStrLn $ "Unknown parameter " ++ x
+
+evalImports :: [String] -> IO [Mixin]
+evalImports [] = return []
+evalImports (f:fs) = do p <- parseFromFile program f
+                        case p of
+                          Left x -> error $ show x
+                          Right p' -> do defs <- pure $ programMixins p'
+                                         imps <- pure $ programImports p'
+                                         ps <- evalImports (fs ++ imps)
+                                         return $ defs ++ ps
+
 interactive :: Config -> IO (Config)
 interactive c = do
   putStr " > "
@@ -48,11 +60,16 @@ interactive c = do
   
     execInstr :: Config -> String -> IO (Maybe Config)
     execInstr c l =
-      case parse instruction "" l of
-        Right i -> do (c'@(Config c1 c2 c3 c4),_) <- pure $ eval (evalInstr i) c
-                      return $ Just c'
-        Left x -> do print x
-                     return Nothing
+      case parse importStmts "" l of
+        Right fs -> do ms' <- evalImports fs
+                       ms <- pure $ configDecls c
+                       c' <- pure $ c {configDecls = ms ++ ms'}
+                       return $ Just c'
+        Left _ -> case parse instruction "" l of
+                    Right i -> do (c'@(Config c1 c2 c3 c4),_) <- pure $ eval (evalInstr i) c
+                                  return $ Just c'
+                    Left x -> do print x
+                                 return Nothing
         
 initConfig :: Config
 initConfig = Config initHeap initEnv initCtx initDefs

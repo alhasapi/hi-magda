@@ -1,4 +1,4 @@
-module Parser(parse,parseFromFile,program,instruction) where
+module Parser(parse,parseFromFile,program,instruction,importStmts) where
 
 import Lexer
 import Core
@@ -6,9 +6,17 @@ import Text.ParserCombinators.Parsec
 
 --Programs
 program = do whiteSpace
+             imports <- many importStmt
              mixins <- many mixinDecl
              main <- instruction
-             return $ Program mixins main
+             return $ Program imports mixins main
+
+importStmts = many importStmt
+
+importStmt =
+  do reserved "import"
+     f <- Lexer.string
+     return f
 
 mixinDecl =
   do reserved "mixin"

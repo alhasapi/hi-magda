@@ -9,7 +9,8 @@ import qualified Data.Map.Lazy as Map
 type TypeExpr = [String]
 
 --Programs
-data Program = Program { programMixins :: [Mixin]
+data Program = Program { programImports :: [String]
+                       , programMixins :: [Mixin]
                        , programMain  :: Instruction }
   deriving (Show,Eq)
 

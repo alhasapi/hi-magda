@@ -59,15 +59,15 @@ interactive c = do
            Nothing -> return c
   
     execInstr :: Config -> String -> IO (Maybe Config)
+    execInstr _ "" = return Nothing
     execInstr c l = let parsel x = parse x "" l in
                       case (parsel instruction,parsel importStmt) of
                         (Right x,_) -> do (c'@(Config c1 c2 c3 c4),_) <- pure $ eval (evalInstr x) c
                                           return $ Just c'
-                        (_,Right x) -> do ms <- pure $ configDecls c
-                                          ms' <- evalImports [x]
-                                          return $ Just c {configDecls=ms++ms'}
-                        (Left x,_) -> do putStrLn $ show x
-                                         return Nothing
+                        (_,Right x) -> do ms <- fmap (++ configDecls c) (evalImports [x])
+                                          return $ Just c {configDecls=ms}
+                        (Left x,Left y) -> do putStrLn $ (show y) ++ (show x)
+                                              return Nothing
                                           
 initConfig :: Config
 initConfig = Config initHeap initEnv initCtx initDefs

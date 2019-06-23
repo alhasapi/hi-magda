@@ -8,14 +8,14 @@ import qualified Data.Map.Lazy as Map
 
 main :: IO ()
 main = do args <- getArgs
-          case length args of
-            0 -> do interactive initConfig
-                    return ()
-            1 -> case parseParam $ head args of
-                   Just x -> runParam x
-                   otherwise -> do evalFile $ head args
-                                   return ()
-            otherwise -> putStrLn "Wrong arguments number"
+          case args of
+            [] -> do interactive initConfig
+                     return ()
+            (p:[]) -> case parseParam p of
+                        Just x -> runParam x
+                        otherwise -> do evalFile p
+                                        return ()
+            otherwise -> runParam "help"
   where
     evalFile :: String -> IO (Config)
     evalFile f = do p <- parseFromFile program f
@@ -31,6 +31,7 @@ main = do args <- getArgs
   
     runParam :: String -> IO ()
     runParam "version" = putStrLn $ version ++ license
+    runParam "help" = putStrLn help
     runParam x = putStrLn $ "Unknown parameter " ++ x
 
 evalImports :: [String] -> IO [Mixin]
@@ -76,6 +77,8 @@ initConfig = Config initHeap initEnv initCtx initDefs
   initEnv  = Left Map.empty
   initCtx  = Top 
   initDefs = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
+
+help = "\tmagda <filename> | --help | --version"
 
 version = " HI Magda v.0.1 \n\
           \ An Haskell Interpreter for the Magda Language. \n\n\

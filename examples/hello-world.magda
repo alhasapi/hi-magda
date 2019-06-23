@@ -1,0 +1,9 @@
+mixin HelloWorld of Object =
+  new Object main()
+  begin
+    "\nHello World!!\n\n".String.print();
+    return null;
+  end
+end
+
+(new HelloWorld).HelloWorld.main();

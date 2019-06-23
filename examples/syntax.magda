@@ -1,0 +1,32 @@
+mixin HelloWorld of Object =      
+  f1 : Test;
+  f2 : Test;
+  new Object MainMatter(p1:(T);p2:   T2)
+    l1 : Lock;
+    l2:Lock;
+  begin
+    if (l1.Lock.free())
+      then
+        call.Some.method(a,b);
+	return 5;
+      else
+        this.Field.num := 100;
+        return null;
+    end;
+
+    while (true)
+      i := this.Field.num;
+      'Hello world'.String.print();
+      if (i.Integer.gt(1000))
+        then
+	  i.String.print();
+	  i := i.Integer.divideBy(2);
+	else
+	  true;
+      end;
+    end;
+  end
+  
+end
+
+(new HelloWorld).HelloWorld.MainMatter();

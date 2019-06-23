@@ -1,1 +1,28 @@
-"Hello World\n\n".String.print();
+mixin LinkedList of Object =
+  item : Object;
+  next : LinkedList;
+  
+  new Object setItem(i : Object)
+  begin
+    this.LinkedList.item := i;
+    return null;
+  end
+
+  new Object getItem(i : Object)
+  begin
+    return this.LinkedList.item;
+  end
+
+end
+
+mixin MainMatter of Object =
+  new Object main()
+  begin
+    l := new LinkedList;
+    l.LinkedList.setItem(100);
+    l.LinkedList.getItem().Integer.print();
+    return null;
+  end
+end
+
+(new MainMatter).MainMatter.main();

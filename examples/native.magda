@@ -1,0 +1,44 @@
+mixin Main of Object =
+  new Object main()
+  a : Boolean;
+  b : Boolean;
+  i : Integer;
+  begin
+    (a is null).Boolean.print();
+    (b is null).Boolean.print();
+
+    "\n\n".String.print();
+
+    a := true;
+    b := false;
+    
+    a.Boolean.print();
+    b.Boolean.print();
+
+    "\n\n".String.print();
+
+    a.Boolean.and(b).Boolean.print();
+    a.Boolean.or(b).Boolean.print();
+    true.Boolean.not().Boolean.print();
+
+    "\nHi ".String.append("there\n").String.print();
+
+    i := 0;
+    while (5.Integer.gt(i))
+      i.Integer.print();
+      i := i.Integer.add(1);
+    end;
+
+    "\n\n".String.print();
+    
+    i := 0;
+    while ((i.Integer.gt(5) is false).Boolean.and((i is 5) is false))
+      i.Integer.print();
+      i := i.Integer.add(1);
+    end;
+    
+    return null;
+  end
+end
+
+(new Main).Main.main();

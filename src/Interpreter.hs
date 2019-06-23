@@ -21,7 +21,7 @@ main = do args <- getArgs
     evalFile f = do p <- parseFromFile program f
                     case p of
                       Left x   -> error $ show x
-                      Right p' -> do initMixins <- evalImports (programImports p')
+                      Right p' -> do initMixins <- fmap (++ programMixins p') $ evalImports (programImports p')
                                      (cc@(Config a b c d),_) <- pure $ eval (evalProg p' {programMixins=initMixins}) initConfig --naming config fields forces evaluation
                                      return cc
 

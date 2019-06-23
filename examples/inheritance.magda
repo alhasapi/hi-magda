@@ -1,0 +1,36 @@
+mixin A of Object =
+  new Object a1()
+  begin
+    "A.a1()\n".String.print();
+    return null;
+  end
+end
+
+mixin B of A =
+  new Object a1()
+  begin
+    "B.a1()\n".String.print();
+    return this.A.a1();
+  end
+end
+
+mixin C of String =
+  new Object print()
+  begin
+    "C,String\n\n".String.print();
+    return null;
+  end
+end
+
+mixin Main of Object =
+  new C main()
+    c : C;
+  begin
+    c := new C,B,A,String;
+    c.C.print();
+    c.B.a1();
+    return c;
+  end
+end
+
+new Main.Main.main().A.a1();

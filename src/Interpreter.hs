@@ -59,18 +59,17 @@ interactive c = do
            Nothing -> return c
   
     execInstr :: Config -> String -> IO (Maybe Config)
-    execInstr c l =
-      case parse importStmts "" l of
-        Right fs -> do ms' <- evalImports fs
-                       ms <- pure $ configDecls c
-                       c' <- pure $ c {configDecls = ms ++ ms'}
-                       return $ Just c'
-        Left _ -> case parse instruction "" l of
-                    Right i -> do (c'@(Config c1 c2 c3 c4),_) <- pure $ eval (evalInstr i) c
-                                  return $ Just c'
-                    Left x -> do print x
-                                 return Nothing
-        
+    execInstr c l = do p' <- pure $ parse instruction "" l
+                       p'' <- pure $ parse importStmt "" l
+                       case (p',p'') of
+                         (Right x,_) -> do (c'@(Config c1 c2 c3 c4),_) <- pure $ eval (evalInstr x) c
+                                           return $ Just c'
+                         (_,Right x) -> do ms <- pure $ configDecls c
+                                           ms' <- evalImports [x]
+                                           return $ Just c {configDecls=ms++ms'}
+                         (Left x,_) -> do putStrLn $ show x
+                                          return Nothing
+                                          
 initConfig :: Config
 initConfig = Config initHeap initEnv initCtx initDefs
   where
@@ -79,7 +78,7 @@ initConfig = Config initHeap initEnv initCtx initDefs
   initCtx  = Top 
   initDefs = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
 
-version = " HI Magda v.0 \n\
+version = " HI Magda v.0.1 \n\
           \ An Haskell Interpreter for the Magda Language. \n\n\
           \ \t https://gitlab.com/magda-lang/hi-magda \n\n"
              

@@ -1,4 +1,4 @@
-module Parser(parse,parseFromFile,program,instruction,importStmts) where
+module Parser(parse,parseFromFile,program,instruction,importStmt) where
 
 import Lexer
 import Core
@@ -10,8 +10,6 @@ program = do whiteSpace
              mixins <- many mixinDecl
              main <- instruction
              return $ Program imports mixins main
-
-importStmts = many importStmt
 
 importStmt =
   do reserved "import"

@@ -8,15 +8,27 @@ mixin LinkedList of Object =
     return null;
   end
 
-  new Object getItem(i : Object)
+  new Object getItem()
   begin
     return this.LinkedList.item;
   end
 
+    new Object setNext(n : LinkedList)
+  begin
+    this.LinkedList.next := n;
+    return null;
+  end
+
+  new Object getNext()
+  begin
+    return this.LinkedList.next;
+  end
+  
 end
 
 mixin MainMatter of Object =
   new Object main()
+    l : LinkedList;
   begin
     l := new LinkedList;
     l.LinkedList.setItem(100);

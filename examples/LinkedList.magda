@@ -13,7 +13,7 @@ mixin LinkedList of Object =
     return this.LinkedList.item;
   end
 
-    new Object setNext(n : LinkedList)
+  new Object setNext(n : LinkedList)
   begin
     this.LinkedList.next := n;
     return null;
@@ -23,10 +23,10 @@ mixin LinkedList of Object =
   begin
     return this.LinkedList.next;
   end
-  
+
 end
 
-mixin MainMatter of Object =
+mixin Main of Object =
   new Object main()
     l : LinkedList;
   begin
@@ -37,4 +37,4 @@ mixin MainMatter of Object =
   end
 end
 
-(new MainMatter).MainMatter.main();
+new Main.main();

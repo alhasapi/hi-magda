@@ -16,6 +16,10 @@ importStmt =
      f <- Lexer.string
      return f
 
+--Types
+typeExpr = try (parens typeExpr) <|> sepBy identifier (symbol ",")
+
+--Mixins
 mixinDecl =
   do reserved "mixin"
      name <- identifier
@@ -100,8 +104,6 @@ instruction = do i1 <- instruction'
                    Just i2' -> return $ Cons i1 i2'
                    Nothing -> return i1
 
---Types
-typeExpr = try (parens typeExpr) <|> sepBy identifier (symbol ",")
 
 --Expressions
 value =

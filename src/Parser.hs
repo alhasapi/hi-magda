@@ -143,7 +143,7 @@ expr =
                       case next of
                         Just e' -> do return e'
                         Nothing -> do return e
-    exprParams = parens $ sepBy expr (symbol ",")                        
+    exprParams = parens $ sepBy expr (symbol ",")
     exprIs = do e1 <- try exprDefer <|> try value <|> parens expr
                 reserved "is"
                 e2 <- try exprDefer <|> try value <|> parens expr

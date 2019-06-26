@@ -1,40 +1,118 @@
-mixin LinkedList of Object =
-  item : Object;
-  next : LinkedList;
+mixin Node of Object =
+  item : Integer;
+
+  new Object setItem(i : Integer)
+  begin
+    this.Node.item := i;
+    return null;
+  end
+
+  new Integer getItem()
+  begin
+    return this.Node.item;
+  end
+end
+
+mixin List of Object =
+  next : List;
   
-  new Object setItem(i : Object)
+  new Object setNext(n : List)
   begin
-    this.LinkedList.item := i;
+    this.List.next := n;
     return null;
   end
 
-  new Object getItem()
+  new List getNext()
   begin
-    return this.LinkedList.item;
+    return this.List.next;
   end
 
-  new Object setNext(n : LinkedList)
+  new Boolean hasNext()
   begin
-    this.LinkedList.next := n;
+    return (this.List.next is null).Boolean.not();
+  end
+
+  new Integer size()
+  begin
+    if(this.List.hasNext())
+    then
+      return 1.Integer.add(this.List.next.List.size());
+    else
+      return 1;
+    end;
+  end
+
+  new Object append(l : LinkedList)
+  begin
+    if(this.List.hasNext())
+    then
+      this.List.next.List.append(l);
+    else
+      this.List.next := l; 
+    end;
+
+    return null;
+  end
+end
+
+mixin ListIterator of Object =
+  head : List;
+  current : List;
+
+  new Object setHead(l : List)
+  begin
+    this.ListIterator.head := l;
+    this.ListIterator.current := l;
     return null;
   end
 
-  new Object getNext()
+  new Boolean hasNext()
   begin
-    return this.LinkedList.next;
+    return (this.ListIterator.current is null).Boolean.not();
   end
 
+  new List next()
+    oc : List;
+  begin
+    oc := this.ListIterator.current;
+    if(oc is null)
+    then
+      return null;
+    else
+      this.ListIterator.current := oc.List.getNext();
+      return oc;
+    end;
+  end
+
+  new Object reset()
+  begin
+    this.ListIterator.current := this.ListIterator.head;
+    return null;
+  end
 end
 
 mixin Main of Object =
   new Object main()
-    l : LinkedList;
+    li : ListIterator;
+    l1 : Node, List;
+    l2 : Node, List;
   begin
-    l := new LinkedList;
-    l.LinkedList.setItem(100);
-    l.LinkedList.getItem().Integer.print();
+    li := new ListIterator;
+    l1 := new Node, List;
+    l2 := new Node, List;
+
+    l1.Node.setItem(1);
+    l2.Node.setItem(2);
+
+    l1.List.append(l2);
+
+    li.ListIterator.setHead(l1);
+    while(li.ListIterator.hasNext())
+      li.ListIterator.next().Node.getItem().Integer.print();
+    end;
+    
     return null;
   end
 end
 
-new Main.main();
+new Main.Main.main();

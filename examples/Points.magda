@@ -1,0 +1,94 @@
+mixin Point of Object =
+  x : Integer;
+  y : Integer;
+
+  new Object setX(x : Integer)
+  begin
+    this.Point.x := x;
+    return null;
+  end
+
+  new Object setY(y : Integer)
+  begin
+    this.Point.y := y;
+    return null;
+  end
+
+  new Integer getX()
+  begin
+    return this.Point.x;
+  end
+
+  new Integer getY()
+  begin
+    return this.Point.y;
+  end
+end
+
+mixin Point3D of Point =
+  z : Integer;
+
+  new Integer getZ()
+  begin
+    return this.Point3D.z;
+  end
+
+  new Object setZ(z : Integer)
+  begin
+    this.Point3D.z := z;
+    return null;
+  end
+end
+
+mixin Color of Object =
+  red : Integer;
+  green : Integer;
+  blue : Integer;
+
+  new Object set(r : Integer; g : Integer; b : Integer)
+  begin
+    this.Color.red := r;
+    this.Color.green := g;
+    this.Color.blue := b;
+    return null;
+  end
+
+  new Integer getR()
+  begin
+    return this.Color.red;
+  end
+
+  new Integer getG()
+  begin
+    return this.Color.green;
+  end
+
+  new Integer getB()
+  begin
+    return this.Color.blue;
+  end
+end
+
+mixin Main of Object =
+  new Object main()
+    p : Point, Point3D, Color;
+  begin
+    p := new Point, Point3D, Color;
+    
+    p.Point.setX(10);
+    p.Point.setY(2);
+    p.Point3D.setZ(126);
+
+    p.Point.getX().Integer.print();
+    p.Point.getY().Integer.print();
+    p.Point3D.getZ().Integer.print();
+
+    p.Color.set(0, 0, 256);
+    p.Color.getR().Integer.print();
+    p.Color.getG().Integer.print();
+    p.Color.getB().Integer.print();
+    return null;
+  end
+end
+
+new Main.Main.main();

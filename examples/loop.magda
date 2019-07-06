@@ -1,0 +1,8 @@
+mixin Main of Object =
+  new Object main()
+    while(true)
+      0;
+    end;
+    return null;
+  end
+end

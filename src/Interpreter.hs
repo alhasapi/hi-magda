@@ -1,5 +1,6 @@
 import Core
 import Parser
+import Evaluator
 import Eval
 import System.Environment (getArgs)
 import System.IO

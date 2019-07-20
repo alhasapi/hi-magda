@@ -1,6 +1,7 @@
 module Eval where
 
 import Core
+import Evaluator
 import qualified Data.Map.Lazy as Map
 
 import Control.Monad
@@ -9,27 +10,7 @@ import Data.Functor
 
 import System.IO.Unsafe --used in native methods
 
---Evaluator
-
-data Evaluator a = Evaluator { eval :: Config -> (Config, a) }
-
-instance Functor Evaluator where
-  fmap f e = Evaluator $ \c ->
-    let (c',v) = eval e c in
-      (c',f v)
-
-instance Applicative Evaluator where
-  pure x = Evaluator $ \c -> (c,x)
-  
-  a <*> b  = Evaluator $ \c ->
-    let (c', f) = eval a c in
-      let (c'', v) = eval b c' in
-        (c'', f v)      
-
-instance Monad Evaluator where
-  a >>= f = Evaluator $ \c ->
-    let (c',v) = eval a c in
-      eval (f v) c'
+--Evaluator utilities
 
 config :: Evaluator Config
 config = Evaluator $ \c -> (c,c)

@@ -1,0 +1,38 @@
+module Evaluator where
+
+data Evaluator a = Evaluator { eval :: Config -> (Config, a) }
+
+instance Functor Evaluator where
+  fmap f e = Evaluator $ \c ->
+    let (c',v) = eval e c in
+      (c',f v)
+
+instance Applicative Evaluator where
+  pure x = Evaluator $ \c -> (c,x)
+  
+  a <*> b  = Evaluator $ \c ->
+    let (c', f) = eval a c in
+      let (c'', v) = eval b c' in
+        (c'', f v)      
+
+instance Monad Evaluator where
+  a >>= f = Evaluator $ \c ->
+    let (c',v) = eval a c in
+      eval (f v) c'
+
+config :: Evaluator Config
+config = Evaluator $ \c -> (c,c)
+
+put :: Config -> Evaluator ()
+put c = Evaluator $ \_ -> (c,())
+
+lookupHeap :: Value -> Evaluator (Maybe Object)
+lookupHeap (ObjMixin addr) = do
+  h <- fmap configHeap config
+  obj <- pure $ Map.lookup addr h
+  return obj
+
+lookupHeap ObjNull = return Nothing
+lookupHeap (ObjBool b) = return $ Just $ instanceBoolean b
+lookupHeap (ObjInt n) = return $ Just $ instanceInteger n
+lookupHeap (ObjString s) = return $ Just $ instanceString s

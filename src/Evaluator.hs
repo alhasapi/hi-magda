@@ -26,33 +26,34 @@ instance Monad (Evaluator c) where
 
 --Transformer Evaluator Monad
 
-data EvaluatorT c m a = EvaluatorT { runEvaluatorT :: c -> m (Evaluator c a) }
-
-evalT :: Monad m => EvaluatorT c m a -> c -> m (c,a)
-evalT et c = do e <- runEvaluatorT et c
-                return $ eval e c
+data EvaluatorT c m a = EvaluatorT { runEvaluatorT :: c -> m (c,a) }
 
 instance Monad m => Functor (EvaluatorT c m) where
-  fmap f et = EvaluatorT $ \c -> do e <- runEvaluatorT et c
-                                    return $ fmap f e
+  fmap f et = EvaluatorT $ \c ->
+    do (c',v) <- runEvaluatorT et c
+       return (c', f v)
 
 instance Monad m => Applicative (EvaluatorT c m) where
-  pure x = EvaluatorT $ \c -> (pure.pure) x
+  pure x = EvaluatorT $ \c -> return (c,x)
 
-  etf <*> et = EvaluatorT $ \c -> do f <- runEvaluatorT etf c
-                                     (c',f') <- pure $ eval f c
-                                     e <- runEvaluatorT et c'
-                                     return $ fmap f' e
+  etf <*> et = EvaluatorT $ \c ->
+    do (c',f) <- runEvaluatorT etf c
+       (c'',v) <- runEvaluatorT et c'
+       return (c'',f v)
 
 instance Monad m => Monad (EvaluatorT c m) where
-  et >>= f = EvaluatorT $ \c -> do e <- runEvaluatorT et c
-                                   (c',v) <- pure $ eval e c
-                                   x <- runEvaluatorT (f v) c'
-                                   return x
+  a >>= f = EvaluatorT $ \c ->
+    do (c',v) <- runEvaluatorT a c
+       y <- runEvaluatorT (f v) c'
+       return y
 
 instance MonadTrans (EvaluatorT c) where
-  lift x = EvaluatorT $ \c -> fmap return x
+  lift m = EvaluatorT $ \c ->
+    do x <- m
+       return (c,x)
 
-prova :: String -> EvaluatorT c IO String
-prova s = do lift $ print s
-             return s
+config :: Monad m => EvaluatorT c m c
+config = EvaluatorT $ \c -> return (c,c)
+
+put :: Monad m => c -> EvaluatorT c m ()
+put c = EvaluatorT $ \_ -> return (c,())

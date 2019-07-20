@@ -200,35 +200,35 @@ evalExpr (ExprIs e1 e2) = do
 
 --Native mixins and instances definitions
 
--- nativeMethod name ret params locals code =
---   MixinMethod ScopeNew name ret params locals code
+nativeMethod name ret params locals code =
+  MixinMethod ScopeNew name ret params locals code
 
--- --Boolean
--- mixinBoolean :: Bool -> Mixin
--- mixinBoolean b = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
---   where
---     boolId x = Identifier x ["Boolean"]
---     metPrint = nativeMethod "print" ["Object"] [] [] natPrint
---     natPrint =
---       let f = \c -> unsafePerformIO (print b >> return c) in
---         Cons (NativeCode f) (Return $ ObjRef ObjNull)
---     metNot = nativeMethod "not" ["Boolean"] [] [] natNot
---     natNot = Return $ ExprIs (ObjRef ObjThis) (ObjRef $ ObjBool False)
---     metAnd = nativeMethod "and" ["Boolean"] [boolId "b"] [] natAnd
---     natAnd = If (ExprId "b")
---                 (If (ObjRef ObjThis)
---                     (Return $ ObjRef $ ObjBool True)
---                     (Return $ ObjRef $ ObjBool False) )
---                 (Return $ ObjRef $ ObjBool False)
---     metOr = nativeMethod "or" ["Boolean"] [boolId "b"] [] natOr
---     natOr = If (ExprId "b")
---                (Return $ ObjRef $ ObjBool True)
---                (If (ObjRef ObjThis)
---                    (Return $ ObjRef $ ObjBool True)
---                    (Return $ ObjRef $ ObjBool False) )    
+--Boolean
+mixinBoolean :: Bool -> Mixin
+mixinBoolean b = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
+  where
+    boolId x = Identifier x ["Boolean"]
+    metPrint = nativeMethod "print" ["Object"] [] [] natPrint
+    natPrint =
+      let f = \c -> unsafePerformIO (print b >> return c) in
+        Cons (NativeCode f) (Return $ ObjRef ObjNull)
+    metNot = nativeMethod "not" ["Boolean"] [] [] natNot
+    natNot = Return $ ExprIs (ObjRef ObjThis) (ObjRef $ ObjBool False)
+    metAnd = nativeMethod "and" ["Boolean"] [boolId "b"] [] natAnd
+    natAnd = If (ExprId "b")
+                (If (ObjRef ObjThis)
+                    (Return $ ObjRef $ ObjBool True)
+                    (Return $ ObjRef $ ObjBool False) )
+                (Return $ ObjRef $ ObjBool False)
+    metOr = nativeMethod "or" ["Boolean"] [boolId "b"] [] natOr
+    natOr = If (ExprId "b")
+               (Return $ ObjRef $ ObjBool True)
+               (If (ObjRef ObjThis)
+                   (Return $ ObjRef $ ObjBool True)
+                   (Return $ ObjRef $ ObjBool False) )    
 
--- instanceBoolean :: Bool -> Object
--- instanceBoolean b = Object [mixinBoolean b] Map.empty
+instanceBoolean :: Bool -> Object
+instanceBoolean b = Object [mixinBoolean b] Map.empty
 
 -- --Integer
 -- mixinInteger :: Integer -> Mixin

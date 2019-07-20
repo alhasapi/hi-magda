@@ -4,9 +4,9 @@ import Core
 import Evaluator
 import qualified Data.Map.Lazy as Map
 
-import Control.Monad
-import Control.Applicative
-import Data.Functor
+-- import Control.Monad
+-- import Control.Applicative
+-- import Data.Functor
 
 import System.IO.Unsafe --used in native methods
 

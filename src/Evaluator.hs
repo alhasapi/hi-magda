@@ -1,5 +1,7 @@
 module Evaluator where
 
+import Control.Monad.Trans.Class
+
 --Basic Evaluator Monad
 
 data Evaluator c a = Evaluator { eval :: c -> (c, a) }
@@ -24,13 +26,17 @@ instance Monad (Evaluator c) where
 
 --Transformer Evaluator Monad
 
-data EvaluatorT m c a = EvaluatorT { runEvaluatorT :: c -> m (Evaluator c a) }
+data EvaluatorT c m a = EvaluatorT { runEvaluatorT :: c -> m (Evaluator c a) }
 
-instance Monad m => Functor (EvaluatorT m c) where
+evalT :: Monad m => EvaluatorT c m a -> c -> m (c,a)
+evalT et c = do e <- runEvaluatorT et c
+                return $ eval e c
+
+instance Monad m => Functor (EvaluatorT c m) where
   fmap f et = EvaluatorT $ \c -> do e <- runEvaluatorT et c
                                     return $ fmap f e
 
-instance Monad m => Applicative (EvaluatorT m c) where
+instance Monad m => Applicative (EvaluatorT c m) where
   pure x = EvaluatorT $ \c -> (pure.pure) x
 
   etf <*> et = EvaluatorT $ \c -> do f <- runEvaluatorT etf c
@@ -38,8 +44,15 @@ instance Monad m => Applicative (EvaluatorT m c) where
                                      e <- runEvaluatorT et c'
                                      return $ fmap f' e
 
-instance Monad m => Monad (EvaluatorT m c) where
+instance Monad m => Monad (EvaluatorT c m) where
   et >>= f = EvaluatorT $ \c -> do e <- runEvaluatorT et c
                                    (c',v) <- pure $ eval e c
                                    x <- runEvaluatorT (f v) c'
                                    return x
+
+instance MonadTrans (EvaluatorT c) where
+  lift x = EvaluatorT $ \c -> fmap return x
+
+prova :: String -> EvaluatorT c IO String
+prova s = do lift $ print s
+             return s

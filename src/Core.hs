@@ -46,7 +46,7 @@ data Instruction  = AssignVar String Expression
                   | If Expression Instruction Instruction
                   | Cons Instruction Instruction
                   | IE Expression
-                  | NativeCode (Config -> Config)
+                  | NativeIO (Config -> IO Config)
 
 instance Show Instruction where
   show x = "<Code>"

@@ -2,32 +2,27 @@ module Eval where
 
 import Core
 import Evaluator
+import Control.Monad.Trans.Class
 import qualified Data.Map.Lazy as Map
-
--- import Control.Monad
--- import Control.Applicative
--- import Data.Functor
-
-import System.IO.Unsafe --used in native methods
 
 --Evaluator utilities
 
-type Eval = EvaluatorT Config
+type Eval = EvaluatorT Config IO
 
-lookupHeap :: Monad m => Value -> Eval m (Maybe Object)
+lookupHeap :: Value -> Eval (Maybe Object)
 lookupHeap (ObjMixin addr) = do
   h <- fmap configHeap config
   obj <- pure $ Map.lookup addr h
   return obj
 
--- lookupHeap ObjNull = return Nothing
--- lookupHeap (ObjBool b) = return $ Just $ instanceBoolean b
--- lookupHeap (ObjInt n) = return $ Just $ instanceInteger n
--- lookupHeap (ObjString s) = return $ Just $ instanceString s
+lookupHeap ObjNull = return Nothing
+lookupHeap (ObjBool b) = return $ Just $ instanceBoolean b
+lookupHeap (ObjInt n) = return $ Just $ instanceInteger n
+lookupHeap (ObjString s) = return $ Just $ instanceString s
 
 --Programs
 
-evalProg :: Monad m => Program -> Eval m ()
+evalProg :: Program -> Eval ()
 
 evalProg p = do
   c <- config
@@ -38,7 +33,7 @@ evalProg p = do
 
 --Instructions
 
-evalInstr :: Monad m => Instruction -> Eval m ()
+evalInstr :: Instruction -> Eval ()
 
 evalInstr (AssignVar var e) = do
   addr <- evalExpr e
@@ -96,15 +91,15 @@ evalInstr (IE e) = do
   evalExpr e
   return ()
 
-evalInstr (NativeCode f) = do
+evalInstr (NativeIO f) = do
   c <- config
-  c' <- pure $ f c
+  c' <- lift $ f c
   put c'
   return ()
 
 --Expressions
 
-evalExpr :: Monad m => Expression -> Eval m Value
+evalExpr :: Expression -> Eval Value
 
 evalExpr (ObjRef v) =
   case v of
@@ -155,7 +150,7 @@ evalExpr (ExprCall e mixin method params) = do
       let mix:_ = filter ((== mixin).mixinName) (objMixins obj) in
         head $ filter ((== method).methodName) (mixinMethods mix)
     
-    evalParams :: Monad m => [Expression] -> Eval m [Value]
+    evalParams :: [Expression] -> Eval [Value]
     evalParams [] = do return []
     evalParams (p:ps) = do
       v <- evalExpr p
@@ -173,12 +168,12 @@ evalExpr (ExprNew types) = do
   put $ c {configHeap = h'}
   return $ ObjMixin (addr + 1)
   where
-    emptyObject :: Monad m => TypeExpr -> Eval m Object
+    emptyObject :: TypeExpr -> Eval Object
     emptyObject =
       let f = \x -> Object x (Map.fromList $ createFields x) in
         (fmap f).bindMixins
 
-    bindMixins :: Monad m => TypeExpr -> Eval m [Mixin]
+    bindMixins :: TypeExpr -> Eval [Mixin]
     bindMixins [] = do return []
     bindMixins (m:ms) =
       let matchMixName = \n x -> mixinName x == n in
@@ -210,8 +205,8 @@ mixinBoolean b = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
     boolId x = Identifier x ["Boolean"]
     metPrint = nativeMethod "print" ["Object"] [] [] natPrint
     natPrint =
-      let f = \c -> unsafePerformIO (print b >> return c) in
-        Cons (NativeCode f) (Return $ ObjRef ObjNull)
+      let f c = do print b; return c in
+        Cons (NativeIO f) (Return $ ObjRef ObjNull)
     metNot = nativeMethod "not" ["Boolean"] [] [] natNot
     natNot = Return $ ExprIs (ObjRef ObjThis) (ObjRef $ ObjBool False)
     metAnd = nativeMethod "and" ["Boolean"] [boolId "b"] [] natAnd
@@ -230,44 +225,47 @@ mixinBoolean b = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
 instanceBoolean :: Bool -> Object
 instanceBoolean b = Object [mixinBoolean b] Map.empty
 
--- --Integer
--- mixinInteger :: Integer -> Mixin
--- mixinInteger n = Mixin "Integer" [] [] [metPrint,metAdd,metGt]
---   where
---     intId x = Identifier x ["Integer"]
---     boolId x = Identifier x ["Boolean"]    
---     metPrint = nativeMethod "print" ["Object"] [] [] natPrint
---     natPrint =
---       let f = \c -> unsafePerformIO (print n >> return c) in
---         Cons (NativeCode f) (Return $ ObjRef ObjNull)
---     metAdd = nativeMethod "add" ["Integer"] [intId "n"] [intId "res"] natAdd
---     natAdd = Cons (NativeCode f) (Return $ ExprId "res")
---       where
---         f c = let (_, ObjInt n') = eval (evalExpr $ ExprId "n") c in
---           fst $ eval (evalInstr $ AssignVar "res" (ObjRef $ ObjInt $ n+n')) c
---     metGt = nativeMethod "gt" ["Boolean"] [intId "n"] [boolId "res"] natGt
---     natGt = Cons (NativeCode f) (Return $ ExprId "res")
---       where
---         f c = let (_, ObjInt n') = eval (evalExpr $ ExprId "n") c in
---           fst $ eval (evalInstr $ AssignVar "res" (ObjRef $ ObjBool $ n > n')) c
+--Integer
+mixinInteger :: Integer -> Mixin
+mixinInteger n = Mixin "Integer" [] [] [metPrint,metAdd,metGt]
+  where
+    intId x = Identifier x ["Integer"]
+    boolId x = Identifier x ["Boolean"]    
+    metPrint = nativeMethod "print" ["Object"] [] [] natPrint
+    natPrint =
+      let f c = do print n; return c in
+        Cons (NativeIO f) (Return $ ObjRef ObjNull)
+    metAdd = nativeMethod "add" ["Integer"] [intId "n"] [intId "res"] natAdd
+    natAdd = Cons (NativeIO f) (Return $ ExprId "res")
+      where
+        f c = do (c',ObjInt x) <- runEvaluatorT (evalExpr $ ExprId "n") c
+                 (c'',_) <- runEvaluatorT (evalInstr $ AssignVar "res" (ObjRef $ ObjInt $ n+x)) c'
+                 return c''
+    metGt = nativeMethod "gt" ["Boolean"] [intId "n"] [boolId "res"] natGt
+    natGt = Cons (NativeIO f) (Return $ ExprId "res")
+      where
+        f c = do (c',ObjInt x) <- runEvaluatorT (evalExpr $ ExprId "n") c
+                 (c'',_) <- runEvaluatorT (evalInstr $ AssignVar "res" (ObjRef $ ObjBool $ n>x)) c'
+                 return c''
 
 
--- instanceInteger :: Integer -> Object
--- instanceInteger n = Object [mixinInteger n] Map.empty
+instanceInteger :: Integer -> Object
+instanceInteger n = Object [mixinInteger n] Map.empty
 
--- --String
--- mixinString :: String -> Mixin
--- mixinString s = Mixin "String" [] [] [metPrint,metAppend]
---   where
---     strId x = Identifier x ["String"]
---     metPrint = nativeMethod "print" ["Object"] [] [] natPrint
---     natPrint =
---       let f = \c -> unsafePerformIO (putStr s >> return c) in
---         Cons (NativeCode f) (Return $ ObjRef ObjNull)
---     metAppend = nativeMethod "append" ["String"] [strId "s"] [strId "res"] natAppend
---     natAppend = Cons (NativeCode f) (Return $ ExprId "res")
---       where
---         f c = let (_,ObjString s') = eval (evalExpr $ ExprId "s") c in
---                 fst $ eval (evalInstr $ AssignVar "res" (ObjRef $ ObjString $ s++s')) c
--- instanceString :: String -> Object
--- instanceString s = Object [mixinString s] Map.empty
+--String
+mixinString :: String -> Mixin
+mixinString s = Mixin "String" [] [] [metPrint,metAppend]
+  where
+    strId x = Identifier x ["String"]
+    metPrint = nativeMethod "print" ["Object"] [] [] natPrint
+    natPrint =
+      let f c = do putStr s; return c in
+        Cons (NativeIO f) (Return $ ObjRef ObjNull)
+    metAppend = nativeMethod "append" ["String"] [strId "s"] [strId "res"] natAppend
+    natAppend = Cons (NativeIO f) (Return $ ExprId "res")
+      where
+        f c = do (c',ObjString s') <- runEvaluatorT (evalExpr $ ExprId "s") c
+                 (c'',_) <- runEvaluatorT (evalInstr $ AssignVar "res" (ObjRef $ ObjString $ s ++ s')) c'
+                 return c''
+instanceString :: String -> Object
+instanceString s = Object [mixinString s] Map.empty

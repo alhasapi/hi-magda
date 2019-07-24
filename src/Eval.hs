@@ -24,7 +24,7 @@ lookupHeap (ObjString s) = return $ Just $ instanceString s
 
 evalProg :: Program -> Eval ()
 
-evalProg p = do
+evalProg p = do --Note that import evaluation is done as a preprocessing step
   c <- config
   mixs <- pure $ configDecls c
   put $ c {configDecls = mixs ++ programMixins p}

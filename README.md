@@ -12,7 +12,7 @@ distribution.
 
 In order to download and build the interpreter follow these steps:
 
- 1. Install \texttt{parsec}, needed for parsing, follow the
+ 1. Install parsec, needed for parsing, follow the
     instructions in the dedicated hackage page[^parsec]. The easiest
     way to achieve this is through the package manager \texttt{cabal},
     using:
@@ -35,7 +35,7 @@ In order to download and build the interpreter follow these steps:
  $ make
 ```
 
- 4. The \texttt{magda} executable will be found in the \texttt{bin}
+ 4. The magda executable will be found in the bin
 	directory inside the project's root directory. To execute your
 	magda program run (from the project's root directory):
 	

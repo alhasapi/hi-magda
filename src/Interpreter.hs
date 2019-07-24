@@ -125,7 +125,7 @@ initConfig = Config initHeap initEnv initCtx initDefs
 
 help = "\tmagda <filename> | --help | --version"
 
-version = " HI Magda v.0.1 \n" ++
+version = " HI Magda v.1.0 \n" ++
           " An Haskell Interpreter for the Magda Language. \n" ++
           "    https://gitlab.com/magda-lang/hi-magda \n"
              

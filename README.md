@@ -52,7 +52,7 @@ linux-x86_64 platform, (v1.0) run:
  $ curl -o /usr/local/bin/magda https://gitlab.com/magda-lang/hi-magda/uploads/51973f43db63ff90435854a6ab8944c8/magda-v1.0-linux-x86_64
 ```
 
-[^mixiny] : <https://www.mimuw.edu.pl/~jdk/mixiny.pdf>
+[^mixiny]: <https://www.mimuw.edu.pl/~jdk/mixiny.pdf>
 [^ghc]: <https://www.haskell.org/ghc/> Home - The Glasgow Haskell Compiler
 [^parsec]: <https://hackage.haskell.org/package/parsec> Parsec - Hackage
 

@@ -1,0 +1,7 @@
+# Haskell Interpreter for Magda
+
+This work is based on J. Kusmierek's PhD dissertation, which contains
+the formal definition of Magda, an Object Oriented, mixin-based,
+statically typed, imperative language [^1]. 
+
+[1] : <>

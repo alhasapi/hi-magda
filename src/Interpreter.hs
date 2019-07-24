@@ -49,10 +49,37 @@ import qualified Data.Map.Lazy as Map
 
 main :: IO Config
 main = do
+  args <- getArgs
+  c <- runParams args
+  return c
+
+runParams :: [String] -> IO Config
+
+runParams [] = do
   putStr version
   (c,()) <- runEvaluatorT evalInteractive initConfig
   return c
-  
+
+runParams ("--help":[]) = do
+  putStr help
+  return initConfig
+
+runParams ("--version":[]) = do
+  putStr $ version ++ license
+  return initConfig
+
+runParams (f:[]) = do
+  p' <- parseFromFile program f 
+  case p' of
+    Left x -> do
+      putStrLn $ show x
+      return initConfig
+    Right p -> do
+      (c,()) <- runEvaluatorT (evalImports p >> evalProg p) initConfig 
+      return c
+
+runParams _ = runParams $ "--help":[]
+
 evalImports :: Program -> Eval ()
 evalImports p = foldr (>>) (return ()) (map evalImport $ programImports p)
 
@@ -88,32 +115,6 @@ evalInteractive = do
 
     (Left x, Left y) -> do lift.putStrLn $ (show x) ++ (show y)
                            return ()
-  
--- interactive :: Config -> IO (Config)
--- interactive c = do
---   putStr " > "
---   hFlush stdout
---   c' <- readEval c
---   c'' <- interactive c'
---   return c''
---   where
---     readEval c =
---       do l <- getLine
---          c' <- execInstr c l
---          case c' of
---            Just c'' -> return c''
---            Nothing -> return c
-  
---     execInstr :: Config -> String -> IO (Maybe Config)
---     execInstr _ "" = return Nothing
---     execInstr c l = let parsel x = parse x "" l in
---                       case (parsel instruction,parsel importStmt) of
---                         (Right x,_) -> do (c'@(Config c1 c2 c3 c4),_) <- pure $ eval (evalInstr x) c
---                                           return $ Just c'
---                         (_,Right x) -> do ms <- fmap (++ configDecls c) (evalImports [x])
---                                           return $ Just c {configDecls=ms}
---                         (Left x,Left y) -> do putStrLn $ (show y) ++ (show x)
---                                               return Nothing
                                           
 initConfig :: Config
 initConfig = Config initHeap initEnv initCtx initDefs
@@ -123,11 +124,12 @@ initConfig = Config initHeap initEnv initCtx initDefs
   initCtx  = Top 
   initDefs = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
 
-help = "\tmagda <filename> | --help | --version"
+help = "    magda <filename> | --help | --version\n"
 
 version = " HI Magda v.1.0 \n" ++
           " An Haskell Interpreter for the Magda Language. \n" ++
-          "    https://gitlab.com/magda-lang/hi-magda \n"
+          "    https://gitlab.com/magda-lang/hi-magda \n" ++
+          "  -------------------------------------------\n"
              
 license = " Haskell Interpreter for Magda \n\
           \ Copyright (C) 2019  Magda Language \n\

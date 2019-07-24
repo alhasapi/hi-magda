@@ -71,11 +71,13 @@ evalInteractive = do
     (Right x, _) -> do evalImport x
                        evalInteractive
                        return ()
+
     (_,Right x) -> do evalInstr x
                       evalInteractive
                       return ()
 
     (Left x, Left y) -> do lift.putStrLn $ (show x) ++ (show y)
+                           evalInteractive
                            return ()
                                           
 initConfig :: Config

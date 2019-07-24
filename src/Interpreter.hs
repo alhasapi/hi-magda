@@ -9,44 +9,6 @@ import Control.Monad.Trans.Class
 
 import qualified Data.Map.Lazy as Map
 
--- main :: IO ()
--- main = do args <- getArgs
---           case args of
---             [] -> do interactive initConfig
---                      return ()
---             (p:[]) -> case parseParam p of
---                         Just x -> runParam x
---                         otherwise -> do evalFile p
---                                         return ()
---             otherwise -> runParam "help"
---   where
---     evalFile :: String -> IO (Config)
---     evalFile f = do p <- parseFromFile program f
---                     case p of
---                       Left x   -> error $ show x
---                       Right p' -> do initMixins <- fmap (++ programMixins p') $ evalImports (programImports p')
---                                      (cc@(Config a b c d),_) <- pure $ eval (evalProg p' {programMixins=initMixins}) initConfig --naming config fields forces evaluation
---                                      return cc
-
---     parseParam :: String -> Maybe String
---     parseParam ('-':'-':p) = Just p
---     parseParam _ = Nothing
-  
---     runParam :: String -> IO ()
---     runParam "version" = putStrLn $ version ++ license
---     runParam "help" = putStrLn help
---     runParam x = putStrLn $ "Unknown parameter " ++ x
-
--- evalImports :: [String] -> IO [Mixin]
--- evalImports [] = return []
--- evalImports (f:fs) = do p <- parseFromFile program f
---                         case p of
---                           Left x -> error $ show x
---                           Right p' -> do defs <- pure $ programMixins p'
---                                          imps <- pure $ programImports p'
---                                          ps <- evalImports (fs ++ imps)
---                                          return $ defs ++ ps
-
 main :: IO Config
 main = do
   args <- getArgs

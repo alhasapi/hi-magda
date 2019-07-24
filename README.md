@@ -2,9 +2,13 @@
 
 This work is based on J. Kusmierek's PhD dissertation, which contains
 the formal definition of Magda, an Object Oriented, mixin-based,
-statically typed, imperative language [^1]. 
+statically typed, imperative language [^mixiny]. 
 
 ## Building the interpreter 
+
+For the building process the ghc compiler id required, follow the
+instructions on its project homepage in order to install ghc for your
+distribution.
 
 In order to download and build the interpreter follow these steps:
 
@@ -48,7 +52,7 @@ linux-x86_64 platform, (v1.0) run:
  $ curl -o /usr/local/bin/magda https://gitlab.com/magda-lang/hi-magda/uploads/51973f43db63ff90435854a6ab8944c8/magda-v1.0-linux-x86_64
 ```
 
-[^1] : <https://www.mimuw.edu.pl/~jdk/mixiny.pdf>
+[^mixiny] : <https://www.mimuw.edu.pl/~jdk/mixiny.pdf>
 [^ghc]: <https://www.haskell.org/ghc/> Home - The Glasgow Haskell Compiler
 [^parsec]: <https://hackage.haskell.org/package/parsec> Parsec - Hackage
 

@@ -40,6 +40,16 @@ runParams ("--version":[]) = do
   putStr $ version ++ license
   return initConfig
 
+runParams ("--ast":f:[]) = do
+  p' <- parseFromFile program f
+  case p' of
+    Left x -> do
+      putStrLn $ show x
+      return initConfig
+    Right x -> do
+      putStrLn $ show x      
+      return initConfig
+
 runParams (f:[]) = do
   p' <- parseFromFile program f 
   case p' of
@@ -78,7 +88,7 @@ evalInteractive :: Eval ()
 evalInteractive = do
   iline <- lift $ runInputT defaultSettings $ getInputLine " >  "
   case iline of
-    Nothing -> lift.putStrLn $ "Bye!"
+    Nothing -> lift.putStrLn $ " Bye!"
     Just "" -> evalInteractive
     Just line -> do
       instr <- pure $ ( parse importStmt "<stdin>" line
@@ -122,8 +132,8 @@ help = "    magda [ <filename> | --help | --version ]\n"
 
 version = " HI Magda v.1.0 \n" ++
           " An Haskell Interpreter for the Magda Language. \n" ++
-          "    https://gitlab.com/magda-lang/hi-magda \n" ++
-          "  -------------------------------------------\n"
+          "    https://gitlab.com/magda-lang/hi-magda    \n" ++
+          "  ------------------------------------------  \n"
              
 license = " Haskell Interpreter for Magda \n\
           \ Copyright (C) 2019  Magda Language \n\

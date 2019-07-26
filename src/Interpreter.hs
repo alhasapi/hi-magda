@@ -7,6 +7,8 @@ import TypeChecker
 import System.Environment (getArgs)
 import System.IO
 
+import System.Console.Haskeline
+
 import Control.Monad.Trans.Class
 
 import qualified Data.Map.Lazy as Map
@@ -74,27 +76,38 @@ evalImport f = do
 
 evalInteractive :: Eval ()
 evalInteractive = do
-  lift $ putStr " >  "
-  lift $ hFlush stdout
-  line <- lift getLine
-  instr <- pure $ (parse importStmt "" line, parse instruction "" line, line == "")
-  case instr of
-    (Right x, _, _) -> do
-      evalImport x
-      evalInteractive
+  iline <- lift $ runInputT defaultSettings $ getInputLine " >  "
+  case iline of
+    Nothing -> do
+      lift.putStrLn $ "Bye!"
+      return ()
+    Just "" -> evalInteractive
+    Just line -> do
+      instr <- pure $ ( parse importStmt "<stdin>" line
+                      , parse instruction "<stdin>" line
+                      , parse localId "<stdin>" line )
+      case instr of
+        (Right x, _, _) -> do
+          evalImport x
+          evalInteractive
 
-    (_,Right i, _) -> do
-      tc <- lift.typeCheck $ tcheckInstr i
-      if tc
-        then do evalInstr i
-                evalInteractive
-        else evalInteractive
+        (_,Right i, _) -> do
+--        tc <- lift.typeCheck $ tcheckInstr i
+          if True -- tc
+            then do evalInstr i
+                    evalInteractive
+            else evalInteractive
 
-    (_, _, True) -> evalInteractive
+        (_, _, Right (Identifier x _)) -> do
+          c <- config
+          Left env <- pure $ configEnv c
+          env' <- pure.(Left) $ Map.insert x ObjNull env
+          put $ c { configEnv = env' }
+          evalInteractive
 
-    (Left x, Left y, _) -> do
-      lift.putStrLn $ (show x) ++ (show y)
-      evalInteractive
+        (Left x, Left y, Left z) -> do
+          lift.putStrLn $ (show x) ++ (show y) ++ (show z)
+          evalInteractive
                                           
 initConfig :: Config
 initConfig = Config initHeap initEnv initCtx initDefs

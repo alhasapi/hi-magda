@@ -1,4 +1,9 @@
-module Parser(parse,parseFromFile,program,instruction,importStmt) where
+module Parser( parse
+             , parseFromFile
+             , program
+             , instruction
+             , importStmt
+             , localId ) where
 
 import Lexer
 import Core
@@ -45,15 +50,16 @@ mixinDecl =
          ps <- parens $ sepBy localId (symbol ";")
          (vars,i) <- metBody
          return $ MixinMethod ScopeNew name t ps vars i
-    localId = do name <- identifier
-                 symbol ":"
-                 t <- typeExpr
-                 return $ Identifier name t
     metBody = do vars <- many $ do x <- localId; symbol ";"; return x
                  reserved "begin"
                  i <- instruction
                  reserved "end"
                  return (vars,i)
+
+localId = do name <- identifier
+             symbol ":"
+             t <- typeExpr
+             return $ Identifier name t
     
 --Instructions
 instruction' =

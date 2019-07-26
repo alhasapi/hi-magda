@@ -2,6 +2,8 @@ import Core
 import Parser
 import Evaluator
 import Eval
+import TypeCheck
+import TypeChecker
 import System.Environment (getArgs)
 import System.IO
 
@@ -15,6 +17,12 @@ main = do
   c <- runParams args
   return c
 
+typeCheck :: TypeCheck a -> IO Bool
+typeCheck tc =  case runTypeChecker tc initContext of
+  (_,Left x) -> do putStrLn x
+                   return False
+  otherwise -> return True
+  
 runParams :: [String] -> IO Config
 
 runParams [] = do
@@ -37,8 +45,11 @@ runParams (f:[]) = do
       putStrLn $ show x
       return initConfig
     Right p -> do
-      (c,()) <- runEvaluatorT (evalImports p >> evalProg p) initConfig 
-      return c
+      tc <- typeCheck (tcheckProgram p)
+      if tc            
+        then do (c,()) <- runEvaluatorT (evalImports p >> evalProg p) initConfig 
+                return c
+        else return initConfig
 
 runParams _ = runParams $ "--help":[]
 
@@ -68,17 +79,20 @@ evalInteractive = do
   line <- lift getLine
   instr <- pure $ (parse importStmt "" line, parse instruction "" line)
   case instr of
-    (Right x, _) -> do evalImport x
-                       evalInteractive
-                       return ()
+    (Right x, _) -> do
+      evalImport x
+      evalInteractive
 
-    (_,Right x) -> do evalInstr x
-                      evalInteractive
-                      return ()
+    (_,Right i) -> do
+      tc <- lift.typeCheck $ tcheckInstr i
+      if tc
+        then do evalInstr i
+                evalInteractive
+        else evalInteractive
 
-    (Left x, Left y) -> do lift.putStrLn $ (show x) ++ (show y)
-                           evalInteractive
-                           return ()
+    (Left x, Left y) -> do
+      lift.putStrLn $ (show x) ++ (show y)
+      evalInteractive
                                           
 initConfig :: Config
 initConfig = Config initHeap initEnv initCtx initDefs
@@ -87,6 +101,9 @@ initConfig = Config initHeap initEnv initCtx initDefs
   initEnv  = Left Map.empty
   initCtx  = Top 
   initDefs = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
+
+initContext :: TypeCheckContext
+initContext = TypeCheckContext [] (Map.empty) []
 
 help = "    magda <filename> | --help | --version\n"
 

@@ -3,7 +3,7 @@ magda: src/*.hs
 	cd src && ghc Interpreter.hs -o ../bin/magda
 
 clean:
-	rm -v -R src/*.hi src/*.o bin
+	rm -fv -R src/*.hi src/*.o bin src/*~
 
 .PHONY: magda
 

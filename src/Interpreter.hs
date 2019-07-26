@@ -77,20 +77,22 @@ evalInteractive = do
   lift $ putStr " >  "
   lift $ hFlush stdout
   line <- lift getLine
-  instr <- pure $ (parse importStmt "" line, parse instruction "" line)
+  instr <- pure $ (parse importStmt "" line, parse instruction "" line, line == "")
   case instr of
-    (Right x, _) -> do
+    (Right x, _, _) -> do
       evalImport x
       evalInteractive
 
-    (_,Right i) -> do
+    (_,Right i, _) -> do
       tc <- lift.typeCheck $ tcheckInstr i
       if tc
         then do evalInstr i
                 evalInteractive
         else evalInteractive
 
-    (Left x, Left y) -> do
+    (_, _, True) -> evalInteractive
+
+    (Left x, Left y, _) -> do
       lift.putStrLn $ (show x) ++ (show y)
       evalInteractive
                                           
@@ -105,7 +107,7 @@ initConfig = Config initHeap initEnv initCtx initDefs
 initContext :: TypeCheckContext
 initContext = TypeCheckContext [] (Map.empty) []
 
-help = "    magda <filename> | --help | --version\n"
+help = "    magda [ <filename> | --help | --version ]\n"
 
 version = " HI Magda v.1.0 \n" ++
           " An Haskell Interpreter for the Magda Language. \n" ++

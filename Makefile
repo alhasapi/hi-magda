@@ -1,9 +1,12 @@
 magda: src/*.hs
-	mkdir bin
-	cd src && ghc Interpreter.hs -o ../bin/magda
+	mkdir -p bin
+	cd src && ghc Interpreter.hs -outputdir ../bin -o ../bin/magda
+
+install: bin/magda
+	cp -v bin/magda /usr/local/bin/magda
 
 clean:
-	rm -v -R src/*.hi src/*.o bin
+	rm -fv -R bin src/*~
 
 .PHONY: magda
 

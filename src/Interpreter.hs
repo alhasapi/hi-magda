@@ -2,8 +2,12 @@ import Core
 import Parser
 import Evaluator
 import Eval
+import TypeCheck
+import TypeChecker
 import System.Environment (getArgs)
 import System.IO
+
+import System.Console.Haskeline
 
 import Control.Monad.Trans.Class
 
@@ -15,6 +19,13 @@ main = do
   c <- runParams args
   return c
 
+typeCheck :: TypeCheck a -> IO Bool
+typeCheck tc =  case runTypeChecker tc initContext of
+  (c,Left x) -> do putStrLn x
+                   putStrLn $ show c
+                   return False
+  otherwise -> return True
+  
 runParams :: [String] -> IO Config
 
 runParams [] = do
@@ -30,6 +41,18 @@ runParams ("--version":[]) = do
   putStr $ version ++ license
   return initConfig
 
+runParams ("--ast":[]) = runParams ["--help"]
+
+runParams ("--ast":f:[]) = do
+  p' <- parseFromFile program f
+  case p' of
+    Left x -> do
+      putStrLn $ show x
+      return initConfig
+    Right x -> do
+      putStrLn $ show x      
+      return initConfig
+
 runParams (f:[]) = do
   p' <- parseFromFile program f 
   case p' of
@@ -37,8 +60,11 @@ runParams (f:[]) = do
       putStrLn $ show x
       return initConfig
     Right p -> do
-      (c,()) <- runEvaluatorT (evalImports p >> evalProg p) initConfig 
-      return c
+      tc <- typeCheck (tcheckProgram p)
+      if tc            
+        then do (c,()) <- runEvaluatorT (evalImports p >> evalProg p) initConfig 
+                return c
+        else return initConfig
 
 runParams _ = runParams $ "--help":[]
 
@@ -63,37 +89,56 @@ evalImport f = do
 
 evalInteractive :: Eval ()
 evalInteractive = do
-  lift $ putStr " >  "
-  lift $ hFlush stdout
-  line <- lift getLine
-  instr <- pure $ (parse importStmt "" line, parse instruction "" line)
-  case instr of
-    (Right x, _) -> do evalImport x
-                       evalInteractive
-                       return ()
+  iline <- lift $ runInputT defaultSettings $ getInputLine " >  "
+  case iline of
+    Nothing -> lift.putStrLn $ " Bye!"
+    Just "" -> evalInteractive
+    Just line -> do
+      instr <- pure $ ( parse importStmt "<stdin>" line
+                      , parse instruction "<stdin>" line
+                      , parse localId "<stdin>" line )
+      case instr of
+        (Right x, _, _) -> do
+          evalImport x
+          evalInteractive
 
-    (_,Right x) -> do evalInstr x
-                      evalInteractive
-                      return ()
+        (_,Right i, _) -> do
+          --tc <- lift.typeCheck $ tcheckInstr i
+          if True -- tc
+            then do evalInstr i
+                    evalInteractive
+            else evalInteractive
 
-    (Left x, Left y) -> do lift.putStrLn $ (show x) ++ (show y)
-                           evalInteractive
-                           return ()
+        (_, _, Right (Identifier x _)) -> do
+          c <- config
+          Left env <- pure $ configEnv c
+          env' <- pure.(Left) $ Map.insert x ObjNull env
+          put $ c { configEnv = env' }
+          evalInteractive
+
+        (Left x, Left y, Left z) -> do
+          lift.putStrLn $ (show x) ++ (show y) ++ (show z)
+          evalInteractive
                                           
 initConfig :: Config
-initConfig = Config initHeap initEnv initCtx initDefs
+initConfig = Config initHeap initEnv initCtx initDecls
   where
   initHeap = Map.fromList [(0,Object [] Map.empty)]
   initEnv  = Left Map.empty
   initCtx  = Top 
-  initDefs = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
 
-help = "    magda <filename> | --help | --version\n"
+initDecls :: [Mixin]
+initDecls = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
+
+initContext :: TypeCheckContext
+initContext = TypeCheckContext initDecls [] (Left ())
+    
+help = "    magda [ <filename> | --help | --version | --ast <filename> ]\n"
 
 version = " HI Magda v.1.0 \n" ++
           " An Haskell Interpreter for the Magda Language. \n" ++
-          "    https://gitlab.com/magda-lang/hi-magda \n" ++
-          "  -------------------------------------------\n"
+          "    https://gitlab.com/magda-lang/hi-magda    \n" ++
+          "  ------------------------------------------  \n"
              
 license = " Haskell Interpreter for Magda \n\
           \ Copyright (C) 2019  Magda Language \n\

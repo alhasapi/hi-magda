@@ -42,7 +42,7 @@ mixin List of Object =
     end;
   end
 
-  new Object append(l : LinkedList)
+  new Object append(l : List)
   begin
     if(this.List.hasNext())
     then

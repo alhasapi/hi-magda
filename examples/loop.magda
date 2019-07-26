@@ -1,8 +1,11 @@
 mixin Main of Object =
   new Object main()
+  begin
     while(true)
       0;
     end;
     return null;
   end
 end
+
+new Main.Main.main();

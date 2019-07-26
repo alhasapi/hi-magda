@@ -126,7 +126,7 @@ initConfig = Config initHeap initEnv initCtx initDefs
   initDefs = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
 
 initContext :: TypeCheckContext
-initContext = TypeCheckContext [] (Map.empty) []
+initContext = TypeCheckContext [] [] (Left ())
 
 help = "    magda [ <filename> | --help | --version ]\n"
 

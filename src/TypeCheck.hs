@@ -10,10 +10,39 @@ subtype a b = foldr (&&) True $ map (\x -> elem x a) b
 
 data TypeCheckContext = TypeCheckContext
   { tcCtxDecls :: [Mixin]
-  , tcCtxEnv :: Map.Map String TypeExpr
-  , tcCtxThis :: TypeExpr }
+  , tcCtxThis :: TypeExpr
+  , tcCtxMethod :: Either () MixinMethod }
 
 type TypeCheck = TypeChecker TypeCheckContext String
+
+lookupLocal :: String -> TypeCheck TypeExpr
+lookupLocal x = do
+  c <- getContext
+  m' <- pure $ tcCtxMethod c
+  case m' of
+    Left () -> raise "Local variable reference outside any method"
+    Right m -> do
+      locals <- pure $ methodLocals m
+      params <- pure $ methodParams m
+      v <- pure.(Map.fromList) $ map (\(Identifier x xt) -> (x,xt)) (locals ++ params) 
+      case Map.lookup x v of
+        Nothing -> raise $ "Local variable not declared " ++ x
+        Just xt -> return xt
+
+lookupMixin :: String -> TypeCheck Mixin
+lookupMixin x = do
+  c <- getContext
+  mixs <- pure.(Map.fromList) $ map (\m -> (mixinName m,m)) (tcCtxDecls c)
+  mix' <- pure.(Map.lookup x) $ mixs
+  case mix' of
+    Nothing -> raise $ "Mixin reference to undeclared mixin " ++ x
+    Just mix -> return mix
+
+lookupMixinField :: String -> String -> TypeCheck TypeExpr
+lookupMixinField x f = undefined
+
+lookupMixinMethod :: String -> String -> TypeCheck MixinMethod
+lookupMixinMethod mix m = undefined
 
 tcheckMany :: [TypeCheck a] -> TypeCheck ()
 tcheckMany = foldr (>>) (return ())
@@ -36,11 +65,8 @@ tcheckMixin m = do
 
 tcheckMethod :: MixinMethod -> TypeCheck ()
 tcheckMethod m = do
-  params <- pure $ methodParams m
-  locals <- pure $ methodLocals m
-  env <- pure $ map (\(Identifier x t) -> (x,t)) (params ++ locals)
   c <- getContext
-  setContext $ c { tcCtxEnv = Map.fromList env }
+  setContext $ c { tcCtxMethod = Right m }
   tcheckInstr $ methodBody m
   return ()
 
@@ -48,17 +74,36 @@ tcheckInstr :: Instruction -> TypeCheck ()
 
 tcheckInstr (AssignVar x e) = do
   et <- tcheckExpr e
-  env <- fmap tcCtxEnv getContext
-  case Map.lookup x env of
-    Nothing -> raise $ "Variable " ++ x ++ " undefined."
-    Just xt -> if et `subtype` xt
-      then return ()
-      else raise $ "Error in assignment for " ++ x     
+  xt <- lookupLocal x
+  if et `subtype` xt
+    then return ()
+    else raise "Unmatching types for variable assignment"
 
-tcheckInstr (AssignField e1 mix fie e2) = undefined
-
-tcheckInstr (Return e) = undefined
-
+tcheckInstr (AssignField e1 mix f e2) = do
+  e1t <- tcheckExpr e1
+  if e1t `subtype` [mix]
+    then do
+      ft <- lookupMixinField mix f
+      e2t <- tcheckExpr e2
+      if e2t `subtype` ft
+        then return ()
+        else raise "Unmatching types for field assignment"
+    else raise "Unmatching mixin dereference"
+    
+tcheckInstr (Return e) = do
+  et <- tcheckExpr e
+  c <- getContext
+  m' <- pure.tcCtxMethod $ c
+  case m' of
+    Left () -> raise "Return instruction outside method declaration"
+    Right m -> do
+      rt <- pure.methodType $ m
+      if et `subtype` rt
+        then do
+          setContext $ c { tcCtxMethod = Left () }
+          return ()
+        else raise "Wrong return type"
+    
 tcheckInstr (While e i) = do
   et <- tcheckExpr e
   if et `subtype` ["Boolean"]

@@ -135,7 +135,7 @@ initContext = TypeCheckContext initDecls [] (Left ())
     
 help = "    magda [ <filename> | --help | --version | --ast <filename> ]\n"
 
-version = " HI Magda v.1.0 \n" ++
+version = " HI Magda v.1.1 \n" ++
           " An Haskell Interpreter for the Magda Language. \n" ++
           "    https://gitlab.com/magda-lang/hi-magda    \n" ++
           "  ------------------------------------------  \n"

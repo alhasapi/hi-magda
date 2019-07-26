@@ -40,6 +40,8 @@ runParams ("--version":[]) = do
   putStr $ version ++ license
   return initConfig
 
+runParams ("--ast":[]) = runParams ["--help"]
+
 runParams ("--ast":f:[]) = do
   p' <- parseFromFile program f
   case p' of
@@ -128,7 +130,7 @@ initConfig = Config initHeap initEnv initCtx initDefs
 initContext :: TypeCheckContext
 initContext = TypeCheckContext [] [] (Left ())
 
-help = "    magda [ <filename> | --help | --version ]\n"
+help = "    magda [ <filename> | --help | --version | --ast <filename> ]\n"
 
 version = " HI Magda v.1.0 \n" ++
           " An Haskell Interpreter for the Magda Language. \n" ++

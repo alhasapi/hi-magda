@@ -128,4 +128,23 @@ tcheckInstr (IE e) = do
 tcheckInstr (NativeIO f) = return ()
 
 tcheckExpr :: Expression -> TypeCheck TypeExpr
-tcheckExpr = undefined
+tcheckExpr (ObjRef v) = case v of
+  ObjNull -> return ["Object"]
+  ObjBool _ -> return ["Object", "Boolean"]
+  ObjInt _ -> return ["Object", "Integer"]
+  ObjString _ -> return ["Object", "String"]
+  ObjThis -> undefined
+  ObjMixin _ -> undefined
+
+tcheckExpr (ExprId x) = lookupLocal x
+
+tcheckExpr (ExprField e mix f) = undefined
+
+tcheckExpr (ExprCall e mix met params) = undefined
+
+tcheckExpr (ExprNew t) = return t
+
+tcheckExpr (ExprIs e1 e2) = do
+  tcheckExpr e1
+  tcheckExpr e2
+  return ["Object", "Boolean"]

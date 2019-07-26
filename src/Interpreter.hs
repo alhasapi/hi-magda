@@ -21,7 +21,8 @@ main = do
 
 typeCheck :: TypeCheck a -> IO Bool
 typeCheck tc =  case runTypeChecker tc initContext of
-  (_,Left x) -> do putStrLn x
+  (c,Left x) -> do putStrLn x
+                   putStrLn $ show c
                    return False
   otherwise -> return True
   
@@ -102,7 +103,7 @@ evalInteractive = do
           evalInteractive
 
         (_,Right i, _) -> do
---        tc <- lift.typeCheck $ tcheckInstr i
+          --tc <- lift.typeCheck $ tcheckInstr i
           if True -- tc
             then do evalInstr i
                     evalInteractive
@@ -120,16 +121,18 @@ evalInteractive = do
           evalInteractive
                                           
 initConfig :: Config
-initConfig = Config initHeap initEnv initCtx initDefs
+initConfig = Config initHeap initEnv initCtx initDecls
   where
   initHeap = Map.fromList [(0,Object [] Map.empty)]
   initEnv  = Left Map.empty
   initCtx  = Top 
-  initDefs = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
+
+initDecls :: [Mixin]
+initDecls = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
 
 initContext :: TypeCheckContext
-initContext = TypeCheckContext [] [] (Left ())
-
+initContext = TypeCheckContext initDecls [] (Left ())
+    
 help = "    magda [ <filename> | --help | --version | --ast <filename> ]\n"
 
 version = " HI Magda v.1.0 \n" ++

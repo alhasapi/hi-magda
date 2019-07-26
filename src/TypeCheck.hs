@@ -6,6 +6,8 @@ import TypeChecker
 import qualified Data.Map.Lazy as Map
 
 subtype :: TypeExpr -> TypeExpr -> Bool
+subtype a ["Bottom"] = False
+subtype ["Bottom"] b = True
 subtype a b = foldr (&&) True $ map (\x -> elem x a) b 
 
 data TypeCheckContext = TypeCheckContext
@@ -13,6 +15,11 @@ data TypeCheckContext = TypeCheckContext
   , tcCtxThis :: TypeExpr
   , tcCtxMethod :: Either () MixinMethod }
 
+instance Show TypeCheckContext where
+  show ctx = "\tDeclarations:\n\n " ++ show (tcCtxDecls ctx) ++
+             "\n\n\tThis type:\n\n " ++ show (tcCtxThis ctx) ++
+             "\n\n\tActual method:\n\n " ++ show (tcCtxMethod ctx)
+             
 type TypeCheck = TypeChecker TypeCheckContext String
 
 lookupLocal :: String -> TypeCheck TypeExpr
@@ -33,17 +40,26 @@ lookupMixin :: String -> TypeCheck Mixin
 lookupMixin x = do
   c <- getContext
   mixs <- pure.(Map.fromList) $ map (\m -> (mixinName m,m)) (tcCtxDecls c)
-  mix' <- pure.(Map.lookup x) $ mixs
-  case mix' of
+  case Map.lookup x mixs of
     Nothing -> raise $ "Mixin reference to undeclared mixin " ++ x
     Just mix -> return mix
 
 lookupMixinField :: String -> String -> TypeCheck TypeExpr
-lookupMixinField x f = undefined
+lookupMixinField mix fie = do
+  m <- lookupMixin mix
+  fies <- pure.(Map.fromList) $ map (\f -> (fieldName f, fieldType f)) (mixinFields m)
+  case Map.lookup fie fies of
+    Nothing -> raise $ "Mixin field reference to undeclared field " ++ fie
+    Just t -> return t
 
 lookupMixinMethod :: String -> String -> TypeCheck MixinMethod
-lookupMixinMethod mix m = undefined
-
+lookupMixinMethod mix met = do
+  m <- lookupMixin mix
+  mets <- pure.(Map.fromList) $ map (\x -> (methodName x, x)) (mixinMethods m)
+  case Map.lookup met mets of
+    Nothing -> raise $ "Mixin method reference to undeclared method " ++ met
+    Just t -> return t
+    
 tcheckMany :: [TypeCheck a] -> TypeCheck ()
 tcheckMany = foldr (>>) (return ())
 
@@ -60,7 +76,7 @@ tcheckProgram p = do
 tcheckMixin :: Mixin -> TypeCheck ()
 tcheckMixin m = do
   c <- getContext
-  setContext $ c { tcCtxThis = mixinType m }
+  setContext $ c { tcCtxThis = mixinName m : mixinType m }
   tcheckMany $ map tcheckMethod $ mixinMethods m
 
 tcheckMethod :: MixinMethod -> TypeCheck ()
@@ -88,7 +104,7 @@ tcheckInstr (AssignField e1 mix f e2) = do
       if e2t `subtype` ft
         then return ()
         else raise "Unmatching types for field assignment"
-    else raise "Unmatching mixin dereference"
+    else raise $ "Unmatching mixin dereference " ++ mix ++ "." ++ f ++ " for the type " ++ show e1t
     
 tcheckInstr (Return e) = do
   et <- tcheckExpr e
@@ -99,9 +115,7 @@ tcheckInstr (Return e) = do
     Right m -> do
       rt <- pure.methodType $ m
       if et `subtype` rt
-        then do
-          setContext $ c { tcCtxMethod = Left () }
-          return ()
+        then return ()
         else raise "Wrong return type"
     
 tcheckInstr (While e i) = do
@@ -129,19 +143,40 @@ tcheckInstr (NativeIO f) = return ()
 
 tcheckExpr :: Expression -> TypeCheck TypeExpr
 tcheckExpr (ObjRef v) = case v of
-  ObjNull -> return ["Object"]
+  ObjNull -> return ["Bottom"]
   ObjBool _ -> return ["Object", "Boolean"]
   ObjInt _ -> return ["Object", "Integer"]
   ObjString _ -> return ["Object", "String"]
-  ObjThis -> undefined
+  ObjThis -> fmap tcCtxThis getContext
   ObjMixin _ -> undefined
 
 tcheckExpr (ExprId x) = lookupLocal x
 
-tcheckExpr (ExprField e mix f) = undefined
+tcheckExpr (ExprField e mix f) = do
+  et <- tcheckExpr e
+  if et `subtype` [mix]
+    then lookupMixinField mix f
+    else raise "Invalid mixin field dereference"
 
-tcheckExpr (ExprCall e mix met params) = undefined
-
+tcheckExpr (ExprCall e mix met params) = do
+  et <- tcheckExpr e
+  if et `subtype` [mix]
+    then do
+      m <- lookupMixinMethod mix met
+      pst <- pure $ map (\(Identifier x xt) -> xt) (methodParams m)
+      tcheckParams params pst
+      return $ methodType m
+    else raise $ "Invalid mixin method dereference " ++ mix ++ "." ++ met ++ " type is " ++ show et
+  where
+    tcheckParams :: [Expression] -> [TypeExpr] -> TypeCheck ()
+    tcheckParams [] [] = return ()
+    tcheckParams (p:ps) (t:ts) = do
+      pt <- tcheckExpr p
+      if pt `subtype` t
+        then tcheckParams ps ts
+        else raise "Wrong parameter type"
+    tcheckParams _ _ = raise "Wrong parameters number"
+    
 tcheckExpr (ExprNew t) = return t
 
 tcheckExpr (ExprIs e1 e2) = do

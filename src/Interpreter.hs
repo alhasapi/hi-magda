@@ -78,9 +78,7 @@ evalInteractive :: Eval ()
 evalInteractive = do
   iline <- lift $ runInputT defaultSettings $ getInputLine " >  "
   case iline of
-    Nothing -> do
-      lift.putStrLn $ "Bye!"
-      return ()
+    Nothing -> lift.putStrLn $ "Bye!"
     Just "" -> evalInteractive
     Just line -> do
       instr <- pure $ ( parse importStmt "<stdin>" line

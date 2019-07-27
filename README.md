@@ -6,8 +6,8 @@ Oriented, mixin-based, statically typed, imperative language [^mixiny].
 
 ## Building the interpreter 
 
-For the building process the ghc compiler id required, follow the
-instructions on its project homepage in order to install ghc for your
+For the building process the ghc compiler is required, follow the
+instructions on its project's homepage in order to install ghc for your
 distribution.
 
 In order to download and build the interpreter follow these steps:

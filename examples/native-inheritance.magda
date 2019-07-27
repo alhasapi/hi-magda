@@ -1,0 +1,4 @@
+mixin A of Object, String =
+end
+
+new Object, String, A.String.print();

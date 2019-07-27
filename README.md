@@ -7,9 +7,9 @@ mixin-based, statically typed, imperative language.
 
 ## Building the interpreter
 
-For the building process the ghc compiler is required, follow the
+For the building process the GHC compiler is required, follow the
 instructions on its [project's homepage](https://www.haskell.org/ghc/)
-in order to install ghc for your distribution.
+in order to install GHC for your distribution.
 
 In order to download and build the interpreter follow these steps:
 

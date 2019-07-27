@@ -45,11 +45,11 @@ In order to download and build the interpreter follow these steps:
 
 ## Downloading the interpreter
 
-To download and install the latest version, available only for the
-linux-x86_64 platform, (v1.0) run:
+To download and install the latest version (v.1.1), available only for the
+linux-x86_64 platform, run:
 
 ```{.sh}
- $ curl -o /usr/local/bin/magda https://gitlab.com/magda-lang/hi-magda/uploads/51973f43db63ff90435854a6ab8944c8/magda-v1.0-linux-x86_64
+ $ curl -o /usr/local/bin/magda https://gitlab.com/magda-lang/hi-magda/uploads/83edb7cbad1e06ec5ba1433e35c25c73/magda-v1.1-linux-x86_64
 ```
 
 [^mixiny]: <https://www.mimuw.edu.pl/~jdk/mixiny.pdf>

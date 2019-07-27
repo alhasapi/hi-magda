@@ -35,18 +35,22 @@ In order to download and build the interpreter follow these steps:
  $ make
 ```
 
- 4. The magda executable will be found in the bin
-	directory inside the project's root directory. To execute your
-	magda program run (from the project's root directory):
+ 4. Install the interpreter. 
 	
 ```{.sh}
- $ ./bin/magda <your-magda-program>
+ $ sudo make install
+```
+
+ 5. Run your Magda programs!
+ 
+```{.sh}
+ $ magda <your-program-filename-here>
 ```
 
 ## Downloading the interpreter
 
-To download and install the latest version (v.1.1), available only for the
-linux-x86_64 platform, run:
+To download and install the latest version (v.1.1) binary, available
+only for the linux-x86_64 platform, run:
 
 ```{.sh}
  $ curl -o /usr/local/bin/magda https://gitlab.com/magda-lang/hi-magda/uploads/83edb7cbad1e06ec5ba1433e35c25c73/magda-v1.1-linux-x86_64

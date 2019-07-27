@@ -14,10 +14,9 @@ in order to install ghc for your distribution.
 In order to download and build the interpreter follow these steps:
 
  1. Install parsec, needed for parsing, follow the instructions from
-    the dedicated [hackage
+    the dedicated [Hackage
     page](https://hackage.haskell.org/package/parsec). The easiest way
-    to achieve this is through the package manager \texttt{cabal},
-    using:
+    to achieve this is through the package manager cabal, using:
 	
 ```{.sh}
  $ cabal install parsec

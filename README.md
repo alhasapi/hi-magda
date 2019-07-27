@@ -1,20 +1,22 @@
 # Haskell Interpreter for Magda
 
-The Haskell Interpreter for Magda is based on J. Kusmierek's PhD 
-dissertation, which contains the formal definition of Magda, an Object
-Oriented, mixin-based, statically typed, imperative language [^mixiny]. 
+The Haskell Interpreter for Magda is based on [J. Kusmierek's PhD
+dissertation](https://www.mimuw.edu.pl/~jdk/mixiny.pdf), which
+contains the formal definition of Magda, an Object Oriented,
+mixin-based, statically typed, imperative language.
 
-## Building the interpreter 
+## Building the interpreter
 
 For the building process the ghc compiler is required, follow the
-instructions on its project's homepage in order to install ghc for your
-distribution.
+instructions on its [project's homepage](https://www.haskell.org/ghc/)
+in order to install ghc for your distribution.
 
 In order to download and build the interpreter follow these steps:
 
- 1. Install parsec, needed for parsing, follow the
-    instructions in the dedicated hackage page[^parsec]. The easiest
-    way to achieve this is through the package manager \texttt{cabal},
+ 1. Install parsec, needed for parsing, follow the instructions from
+    the dedicated [hackage
+    page](https://hackage.haskell.org/package/parsec). The easiest way
+    to achieve this is through the package manager \texttt{cabal},
     using:
 	
 ```{.sh}
@@ -55,8 +57,3 @@ only for the linux-x86_64 platform, run:
 ```{.sh}
  $ curl -o /usr/local/bin/magda https://gitlab.com/magda-lang/hi-magda/uploads/83edb7cbad1e06ec5ba1433e35c25c73/magda-v1.1-linux-x86_64
 ```
-
-[^mixiny]: <https://www.mimuw.edu.pl/~jdk/mixiny.pdf>
-[^ghc]: <https://www.haskell.org/ghc/> Home - The Glasgow Haskell Compiler
-[^parsec]: <https://hackage.haskell.org/package/parsec> Parsec - Hackage
-

@@ -30,6 +30,7 @@ runParams :: [String] -> IO Config
 
 runParams [] = do
   putStr version
+  putStr disclaimer
   (c,()) <- runEvaluatorT evalInteractive initConfig
   return c
 
@@ -139,7 +140,12 @@ version = " HI Magda v.1.1 \n" ++
           " An Haskell Interpreter for the Magda Language. \n" ++
           "    https://gitlab.com/magda-lang/hi-magda    \n" ++
           "  ------------------------------------------  \n"
-             
+
+disclaimer = " Haskell Interpreter for Magda  Copyright (C) 2019  Magda Language \n\
+             \ This program comes with ABSOLUTELY NO WARRANTY. \n\
+             \ This is free software, and you are welcome to redistribute it \n\
+             \ under certain conditions. Run `magda --version` for details. \n"
+          
 license = " Haskell Interpreter for Magda \n\
           \ Copyright (C) 2019  Magda Language \n\
           \ This program is free software: you can redistribute it and/or modify \n\

@@ -198,6 +198,8 @@ evalExpr (ExprIs e1 e2) = do
 nativeMethod name ret params locals code =
   MixinMethod ScopeNew name ret params locals code
 
+--Object
+
 --Boolean
 mixinBoolean :: Mixin
 mixinBoolean = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
@@ -278,7 +280,7 @@ mixinString = Mixin "String" [] [] [metPrint,metAppend]
     metAppend = nativeMethod "append" ["String"] [strId "s"] [] (NativeIO natAppend)
     natAppend c = do
       (c',ObjString x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c            
-      (c'',ObjString y) <- runEvaluatorT (evalExpr $ ExprId "n") c'          
+      (c'',ObjString y) <- runEvaluatorT (evalExpr $ ExprId "s") c'          
       (c''',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef $ ObjString $ x++y) c''
       return c'''
 

@@ -29,7 +29,7 @@ typeCheck tc =  case runTypeChecker tc initContext of
 runParams :: [String] -> IO Config
 runParams [] = do
   putStr version
-  putStr disclaimer
+  putStrLn disclaimer
   (c,()) <- runEvaluatorT evalInteractive initConfig
   return c
 

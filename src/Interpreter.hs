@@ -27,7 +27,6 @@ typeCheck tc =  case runTypeChecker tc initContext of
   otherwise -> return True
   
 runParams :: [String] -> IO Config
-
 runParams [] = do
   putStr version
   putStr disclaimer

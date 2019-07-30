@@ -129,7 +129,7 @@ initConfig = Config initHeap initEnv initCtx initDecls
   initCtx  = Top 
 
 initDecls :: [Mixin]
-initDecls = [Mixin "Object" [] [] [], mixinInteger 0, mixinBoolean False, mixinString ""]
+initDecls = [Mixin "Object" [] [] [], mixinBoolean, mixinInteger, mixinString]
 
 initContext :: TypeCheckContext
 initContext = TypeCheckContext initDecls [] (Left ())

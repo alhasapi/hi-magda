@@ -16,9 +16,9 @@ lookupHeap (ObjMixin addr) = do
   return obj
 
 lookupHeap ObjNull = return Nothing
-lookupHeap (ObjBool b) = return $ Just $ instanceBoolean b
-lookupHeap (ObjInt n) = return $ Just $ instanceInteger n
-lookupHeap (ObjString s) = return $ Just $ instanceString s
+lookupHeap (ObjBool _) = return $ Just instanceBoolean
+lookupHeap (ObjInt _) = return $ Just instanceInteger
+lookupHeap (ObjString _) = return $ Just instanceString
 
 --Programs
 
@@ -199,22 +199,28 @@ nativeMethod name ret params locals code =
   MixinMethod ScopeNew name ret params locals code
 
 --Boolean
-mixinBoolean :: Bool -> Mixin
-mixinBoolean b = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
+mixinBoolean :: Mixin
+mixinBoolean = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
   where
     boolId x = Identifier x ["Boolean"]
-    metPrint = nativeMethod "print" ["Object"] [] [] natPrint
-    natPrint =
-      let f c = do print b; return c in
-        Cons (NativeIO f) (Return $ ObjRef ObjNull)
+
+    metPrint = nativeMethod "print" ["Object"] [] [] (NativeIO natPrint)
+    natPrint c = do
+      (c',ObjBool x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c
+      print x
+      (c'',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef ObjNull) c'
+      return c''
+
     metNot = nativeMethod "not" ["Boolean"] [] [] natNot
     natNot = Return $ ExprIs (ObjRef ObjThis) (ObjRef $ ObjBool False)
+
     metAnd = nativeMethod "and" ["Boolean"] [boolId "b"] [] natAnd
     natAnd = If (ExprId "b")
                 (If (ObjRef ObjThis)
                     (Return $ ObjRef $ ObjBool True)
                     (Return $ ObjRef $ ObjBool False) )
                 (Return $ ObjRef $ ObjBool False)
+
     metOr = nativeMethod "or" ["Boolean"] [boolId "b"] [] natOr
     natOr = If (ExprId "b")
                (Return $ ObjRef $ ObjBool True)
@@ -222,50 +228,59 @@ mixinBoolean b = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
                    (Return $ ObjRef $ ObjBool True)
                    (Return $ ObjRef $ ObjBool False) )    
 
-instanceBoolean :: Bool -> Object
-instanceBoolean b = Object [mixinBoolean b] Map.empty
+instanceBoolean :: Object
+instanceBoolean = Object [mixinBoolean] Map.empty
 
 --Integer
-mixinInteger :: Integer -> Mixin
-mixinInteger n = Mixin "Integer" [] [] [metPrint,metAdd,metGt]
+mixinInteger :: Mixin
+mixinInteger = Mixin "Integer" [] [] [metPrint,metAdd,metGt]
   where
     intId x = Identifier x ["Integer"]
     boolId x = Identifier x ["Boolean"]    
-    metPrint = nativeMethod "print" ["Object"] [] [] natPrint
-    natPrint =
-      let f c = do print n; return c in
-        Cons (NativeIO f) (Return $ ObjRef ObjNull)
-    metAdd = nativeMethod "add" ["Integer"] [intId "n"] [intId "res"] natAdd
-    natAdd = Cons (NativeIO f) (Return $ ExprId "res")
-      where
-        f c = do (c',ObjInt x) <- runEvaluatorT (evalExpr $ ExprId "n") c
-                 (c'',_) <- runEvaluatorT (evalInstr $ AssignVar "res" (ObjRef $ ObjInt $ n+x)) c'
-                 return c''
-    metGt = nativeMethod "gt" ["Boolean"] [intId "n"] [boolId "res"] natGt
-    natGt = Cons (NativeIO f) (Return $ ExprId "res")
-      where
-        f c = do (c',ObjInt x) <- runEvaluatorT (evalExpr $ ExprId "n") c
-                 (c'',_) <- runEvaluatorT (evalInstr $ AssignVar "res" (ObjRef $ ObjBool $ n>x)) c'
-                 return c''
 
+    metPrint = nativeMethod "print" ["Object"] [] [] (NativeIO natPrint)
+    natPrint c = do
+      (c',ObjInt x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c
+      print x
+      (c'',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef ObjNull) c'
+      return c''
 
-instanceInteger :: Integer -> Object
-instanceInteger n = Object [mixinInteger n] Map.empty
+    metAdd = nativeMethod "add" ["Integer"] [intId "n"] [] (NativeIO natAdd)
+    natAdd c = do
+      (c',ObjInt x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c            
+      (c'',ObjInt y) <- runEvaluatorT (evalExpr $ ExprId "n") c'          
+      (c''',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef $ ObjInt $ x+y) c''
+      return c'''
+
+    metGt = nativeMethod "gt" ["Boolean"] [intId "n"] [] (NativeIO natGt)
+    natGt c = do
+      (c',ObjInt x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c            
+      (c'',ObjInt y) <- runEvaluatorT (evalExpr $ ExprId "n") c'          
+      (c''',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef $ ObjBool $ x>y) c''
+      return c'''
+
+instanceInteger :: Object
+instanceInteger = Object [mixinInteger] Map.empty
 
 --String
-mixinString :: String -> Mixin
-mixinString s = Mixin "String" [] [] [metPrint,metAppend]
+mixinString :: Mixin
+mixinString = Mixin "String" [] [] [metPrint,metAppend]
   where
     strId x = Identifier x ["String"]
-    metPrint = nativeMethod "print" ["Object"] [] [] natPrint
-    natPrint =
-      let f c = do putStr s; return c in
-        Cons (NativeIO f) (Return $ ObjRef ObjNull)
-    metAppend = nativeMethod "append" ["String"] [strId "s"] [strId "res"] natAppend
-    natAppend = Cons (NativeIO f) (Return $ ExprId "res")
-      where
-        f c = do (c',ObjString s') <- runEvaluatorT (evalExpr $ ExprId "s") c
-                 (c'',_) <- runEvaluatorT (evalInstr $ AssignVar "res" (ObjRef $ ObjString $ s ++ s')) c'
-                 return c''
-instanceString :: String -> Object
-instanceString s = Object [mixinString s] Map.empty
+
+    metPrint = nativeMethod "print" ["Object"] [] [] (NativeIO natPrint)
+    natPrint c = do
+      (c',ObjString x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c
+      putStrLn x
+      (c'',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef ObjNull) c'
+      return c''
+
+    metAppend = nativeMethod "append" ["String"] [strId "s"] [] (NativeIO natAppend)
+    natAppend c = do
+      (c',ObjString x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c            
+      (c'',ObjString y) <- runEvaluatorT (evalExpr $ ExprId "n") c'          
+      (c''',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef $ ObjString $ x++y) c''
+      return c'''
+
+instanceString :: Object
+instanceString = Object [mixinString] Map.empty

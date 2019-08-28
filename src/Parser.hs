@@ -60,7 +60,41 @@ localId = do name <- identifier
              symbol ":"
              t <- typeExpr
              return $ Identifier name t
-    
+
+inimod = do
+  scope <- try scopeRequired <|> scopeOptional
+  mixin <- identifier
+  ps <- parens $ sepBy localId (symbol ";")
+  reserved "initializes"
+  initializes <- parens $ sepBy inimodField (symbol ",")
+  vars <- many $ do x <- localId; symbol ";"; return x
+  reserved "begin"
+  body <- optionMaybe instruction
+  super <- superStmt
+  reserved "end"
+  return $ IniModule scope mixin ps initializes vars body super
+    where
+      scopeRequired = do reserved "required"
+                         return IniRequired
+      scopeOptional = do reserved "optional"
+                         return IniOptional
+      superStmt = do reserved "super"
+                     fs <- brackets $ sepBy inimodFieldAssign (symbol ",")
+                     semi
+                     return fs
+
+inimodField = do
+  mix <- identifier
+  symbol "."
+  field <- identifier
+  return (mix,field)
+
+inimodFieldAssign = do
+  f <- inimodField
+  reservedOp ":="
+  e <- expr
+  return (f,e)
+  
 --Instructions
 instruction' =
   try insIf

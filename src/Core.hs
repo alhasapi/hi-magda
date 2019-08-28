@@ -29,13 +29,26 @@ data MixinMethod = MixinMethod { methodScope  :: MethodScope
                                , methodParams :: [Identifier]
                                , methodLocals :: [Identifier]
                                , methodBody   :: Instruction }
-  deriving (Show,Eq)                   
+  deriving (Show,Eq)
 --                 new        abstract   implement   override
 data MethodScope = ScopeNew | ScopeAbs | ScopeImpl | ScopeOver
   deriving (Show,Eq)
 
 data Identifier = Identifier { idName :: String
                              , idType :: TypeExpr }
+  deriving (Show,Eq)
+
+--Initialization modules
+data IniModuleScope = IniRequired | IniOptional
+  deriving (Show,Eq)
+
+data IniModule = IniModule { moduleScope       :: IniModuleScope
+                           , moduleMixin       :: String
+                           , moduleParams      :: [Identifier]
+                           , moduleInitializes :: [(String,String)]
+                           , moduleLocals      :: [Identifier]
+                           , moduleBody        :: Maybe Instruction
+                           , moduleSuper       :: [((String,String), Expression)] }
   deriving (Show,Eq)
 
 --Instructions

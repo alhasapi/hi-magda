@@ -26,6 +26,10 @@ langDef =
                                      , "this"
                                      , "is"
                                      , "import"
+                                     , "required"
+                                     , "optional"
+                                     , "initializes"
+                                     , "super"
                                      ]          
            , Token.reservedOpNames = [ ";"
                                      , ":="
@@ -38,6 +42,7 @@ identifier = Token.identifier lexer
 reserved   = Token.reserved lexer
 reservedOp = Token.reservedOp lexer
 parens     = Token.parens lexer
+brackets   = Token.brackets lexer
 integer    = Token.integer lexer
 string     = Token.stringLiteral lexer
 semi       = Token.semi lexer

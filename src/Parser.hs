@@ -32,9 +32,10 @@ mixinDecl =
      t <- typeExpr
      reserved "="
      fs <- many fieldDecl
+     ims <- many $ inimod (symbol name)  
      ms <- many metDecl
      reserved "end"
-     return $ Mixin name t fs ms
+     return $ Mixin name t fs ims ms
   where
     fieldDecl = do f <- identifier
                    symbol ":"
@@ -61,9 +62,10 @@ localId = do name <- identifier
              t <- typeExpr
              return $ Identifier name t
 
-inimod = do
+--Initialization modules
+inimod p = do
   scope <- try scopeRequired <|> scopeOptional
-  mixin <- identifier
+  mixin <- p
   ps <- parens $ sepBy localId (symbol ";")
   reserved "initializes"
   initializes <- parens $ sepBy inimodField (symbol ",")

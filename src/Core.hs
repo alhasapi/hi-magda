@@ -15,10 +15,11 @@ data Program = Program { programImports :: [String]
   deriving (Show,Eq)
 
 --Mixins
-data Mixin = Mixin { mixinName     :: String
-                   , mixinType     :: TypeExpr
-                   , mixinFields   :: [MixinField]
-                   , mixinMethods  :: [MixinMethod] }
+data Mixin = Mixin { mixinName       :: String
+                   , mixinType       :: TypeExpr
+                   , mixinFields     :: [MixinField]
+                   , mixinIniModules :: [IniModule]
+                   , mixinMethods    :: [MixinMethod] }
   deriving (Show,Eq)             
 data MixinField = MixinField { fieldName :: String
                              , fieldType :: TypeExpr }

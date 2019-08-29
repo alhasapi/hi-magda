@@ -202,7 +202,7 @@ nativeMethod name ret params locals code =
 
 --Boolean
 mixinBoolean :: Mixin
-mixinBoolean = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
+mixinBoolean = Mixin "Boolean" [] [] [] [metPrint, metNot, metAnd, metOr]
   where
     boolId x = Identifier x ["Boolean"]
 
@@ -235,7 +235,7 @@ instanceBoolean = Object [mixinBoolean] Map.empty
 
 --Integer
 mixinInteger :: Mixin
-mixinInteger = Mixin "Integer" [] [] [metPrint,metAdd,metGt]
+mixinInteger = Mixin "Integer" [] [] [] [metPrint,metAdd,metGt]
   where
     intId x = Identifier x ["Integer"]
     boolId x = Identifier x ["Boolean"]    
@@ -266,7 +266,7 @@ instanceInteger = Object [mixinInteger] Map.empty
 
 --String
 mixinString :: Mixin
-mixinString = Mixin "String" [] [] [metPrint,metAppend]
+mixinString = Mixin "String" [] [] [] [metPrint,metAppend]
   where
     strId x = Identifier x ["String"]
 

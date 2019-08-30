@@ -162,7 +162,8 @@ value =
     reservedMap kw val = fmap (const $ ObjRef val) $ reserved kw
     objNew = do reserved "new"
                 types <- typeExpr
-                return $ ExprNew types
+                ps <- brackets $ sepBy inimodFieldAssign (symbol ",")
+                return $ ExprNew types ps
 
 expr =
   try exprIs

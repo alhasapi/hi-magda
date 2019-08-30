@@ -177,7 +177,7 @@ tcheckExpr (ExprCall e mix met params) = do
         else raise "Wrong parameter type"
     tcheckParams _ _ = raise "Wrong parameters number"
     
-tcheckExpr (ExprNew t) = return t
+tcheckExpr (ExprNew t _) = return t
 
 tcheckExpr (ExprIs e1 e2) = do
   tcheckExpr e1

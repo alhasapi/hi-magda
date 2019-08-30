@@ -73,7 +73,7 @@ data Expression = ObjRef Value
                 | ExprId String
                 | ExprField Expression String String
                 | ExprCall Expression String String [Expression]
-                | ExprNew TypeExpr
+                | ExprNew TypeExpr [((String,String), Expression)]
                 | ExprIs Expression Expression
   deriving (Show,Eq)
 

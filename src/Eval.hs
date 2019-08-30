@@ -157,7 +157,7 @@ evalExpr (ExprCall e mixin method params) = do
       vs <- evalParams ps
       return (v:vs)
     
-evalExpr (ExprNew types) = do
+evalExpr (ExprNew types params) = do
   c <- config
   h <- pure $ configHeap c
   

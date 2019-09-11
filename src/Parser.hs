@@ -42,15 +42,43 @@ mixinDecl =
                    t <- typeExpr
                    symbol ";"
                    return $ MixinField f t
-
-    metDecl = metDeclNew
+    metDecl =
+      try metDeclNew
+      <|> try metDeclAbs
+      <|> try metDeclImpl
+      <|> metDeclOver
     metDeclNew =
       do reserved "new"
          t <- typeExpr
          name <- identifier
-         ps <- parens $ sepBy localId (symbol ";")
+         ps <- metParams
          (vars,i) <- metBody
          return $ MixinMethod ScopeNew name t ps vars i
+    metDeclAbs =
+      do reserved "abstract"
+         t <- typeExpr
+         name <- identifier
+         ps <- metParams
+         return $ MixinMethod ScopeAbs name t ps [] (NativeIO return)
+    metDeclOver =
+      do reserved "override"
+         t <- typeExpr
+         mix <- identifier
+         symbol "."
+         name <- identifier
+         ps <- metParams
+         (vars,i) <- metBody
+         return $ MixinMethod (ScopeOver mix) name t ps vars i 
+    metDeclImpl =
+      do reserved "implement"
+         t <- typeExpr
+         mix <- identifier
+         symbol "."
+         name <- identifier
+         ps <- metParams
+         (vars,i) <- metBody
+         return $ MixinMethod (ScopeOver mix) name t ps vars i
+    metParams = parens $ sepBy localId (symbol ";")
     metBody = do vars <- many $ do x <- localId; symbol ";"; return x
                  reserved "begin"
                  i <- instruction

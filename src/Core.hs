@@ -31,8 +31,11 @@ data MixinMethod = MixinMethod { methodScope  :: MethodScope
                                , methodLocals :: [Identifier]
                                , methodBody   :: Instruction }
   deriving (Show,Eq)
---                 new        abstract   implement   override
-data MethodScope = ScopeNew | ScopeAbs | ScopeImpl | ScopeOver
+
+data MethodScope = ScopeNew
+                 | ScopeAbs
+                 | ScopeImpl String
+                 | ScopeOver String
   deriving (Show,Eq)
 
 data Identifier = Identifier { idName :: String

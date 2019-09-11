@@ -4,6 +4,8 @@ import Core
 import Evaluator
 import Control.Monad.Trans.Class
 import qualified Data.Map.Lazy as Map
+import Data.Maybe
+import Data.List
 
 --Evaluator utilities
 
@@ -97,6 +99,23 @@ evalInstr (NativeIO f) = do
   put c'
   return ()
 
+--Objects and Mixin manipulation
+
+baseExt :: [Mixin] -> TypeExpr -> TypeExpr
+baseExt _ [] = []
+baseExt decls (mix:mixs) = mixs' `union` [mix] `union` baseExt decls mixs
+  where
+    mixs' :: TypeExpr
+    mixs' = baseExt decls $ mixinType.head $ filter ((== mix).mixinName) decls
+
+mixinify :: TypeExpr -> Eval [Mixin]
+mixinify [] = return []
+mixinify (t:ts) = do
+  decls <- fmap configDecls config
+  m <- pure.head $ filter ((== t).mixinName) decls
+  ms <- mixinify ts
+  return $ m:ms
+  
 --Expressions
 
 evalExpr :: Expression -> Eval Value

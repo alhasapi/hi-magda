@@ -101,8 +101,9 @@ inimod p = do
   reserved "begin"
   body <- optionMaybe instruction
   super <- superStmt
+  body' <- optionMaybe instruction
   reserved "end"
-  return $ IniModule scope mixin ps initializes vars body super
+  return $ IniModule scope mixin ps initializes vars body super body'
     where
       scopeRequired = do reserved "required"
                          return IniRequired

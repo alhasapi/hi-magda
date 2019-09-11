@@ -52,7 +52,8 @@ data IniModule = IniModule { moduleScope       :: IniModuleScope
                            , moduleInitializes :: [(String,String)]
                            , moduleLocals      :: [Identifier]
                            , moduleBody        :: Maybe Instruction
-                           , moduleSuper       :: [((String,String), Expression)] }
+                           , moduleSuper       :: [((String,String), Expression)]
+                           , moduleBody'       :: Maybe Instruction }
   deriving (Show,Eq)
 
 --Instructions

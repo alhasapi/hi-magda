@@ -20,6 +20,13 @@ lookupHeap (ObjBool _) = return $ Just instanceBoolean
 lookupHeap (ObjInt _) = return $ Just instanceInteger
 lookupHeap (ObjString _) = return $ Just instanceString
 
+--nuovo:
+lookupHeap ObjThis = do c <- config
+                        ctx <- pure $ configCtx c
+                        case ctx of
+                          Top -> return Nothing
+                          context -> lookupHeap (ctxThis context)
+ 
 --Programs
 
 evalProg :: Program -> Eval ()
@@ -35,6 +42,8 @@ evalProg p = do --Note that import evaluation is done as a preprocessing step
 
 evalInstr :: Instruction -> Eval ()
 
+evalInstr Skip = return ()
+
 evalInstr (AssignVar var e) = do
   addr <- evalExpr e
   c <- config
@@ -45,14 +54,15 @@ evalInstr (AssignVar var e) = do
   
 evalInstr (AssignField e mixin field e') = do
   ObjMixin addr <- evalExpr e
+  --val <- evalExpr e --devo permettere tutti i tipi, anche ObjBool
   addr' <- evalExpr e'
   
-  Just obj <- lookupHeap $ ObjMixin addr
+  Just obj <- lookupHeap $ ObjMixin addr -- val: attenzione: potrebbe essere null
   fields <- pure $ Map.update (const $ Just addr') (mixin,field) (objFields obj)
   obj' <- pure $ obj {objFields = fields}
   
   h  <- fmap configHeap config
-  h' <- pure $ Map.update (const $ Just obj') addr h
+  h' <- pure $ Map.update (const $ Just obj') addr h --val h
 
   c <- config
   put $ c {configHeap = h'}
@@ -121,19 +131,20 @@ evalExpr (ExprField e mixin field) = do
 evalExpr (ExprCall e mixin method params) = do
   addr <- evalExpr e
   actuals <- evalParams params
-  Just obj <- lookupHeap addr
-  m <- pure $ bindMethod obj (mixin,method)
-  
-  c <- config
-  env <- pure $ initLocals m actuals (initEnv m)
-  ctx <- pure $ Context addr (mixin,method)
-
-  put $ c {configEnv = env, configCtx = ctx}
-  evalInstr (methodBody m)
-  Right retval <- fmap configEnv config
-  h' <- fmap configHeap config
-  put $ c {configHeap = h'}
-  return retval
+  --Just obj <- lookupHeap addr
+  val <- lookupHeap addr
+  case val of
+    Nothing -> return ObjNull  --meglio poi toglierlo
+    (Just obj) -> do (mix,m) <- pure $ bindMethod obj (mixin,method)
+                     c <- config
+                     env <- pure $ initLocals m actuals (initEnv m)
+                     ctx <- pure $ Context addr (mix,method)
+                     put $ c {configEnv = env, configCtx = ctx}
+                     evalInstr (methodBody m)
+                     Right retval <- fmap configEnv config
+                     h' <- fmap configHeap config
+                     put $ c {configHeap = h'}
+                     return retval
   where
     initLocals :: MixinMethod -> [Value] -> Environment -> Environment
     initLocals met vs (Left env) =
@@ -145,11 +156,14 @@ evalExpr (ExprCall e mixin method params) = do
       let localIds = (methodParams met ++ methodLocals met) in
         Left $ Map.fromList $ map (\x -> (idName x, ObjNull)) localIds
     
-    bindMethod :: Object -> (String,String) -> MixinMethod
-    bindMethod obj (mixin,method) =
+    bindMethod :: Object -> (String,String) -> (String, MixinMethod) --dovrebbe restituirmi sia il mixin attuale sia il method
+    bindMethod obj (mixin,method) = (mixinName (last (filter (\x-> elem (method) (map (methodName) (mixinMethods x))) (objMixins obj))), head (filter (\x -> methodName x == (method)) (mixinMethods (last (filter (\x-> elem (method) (map (methodName) (mixinMethods x))) (objMixins obj))))))
+                                   
+    {-
       let mix:_ = filter ((== mixin).mixinName) (objMixins obj) in
-        head $ filter ((== method).methodName) (mixinMethods mix)
-    
+        head $ filter ((== (mixin ++ "." ++ method)).methodName) (mixinMethods mix)
+    -}
+
     evalParams :: [Expression] -> Eval [Value]
     evalParams [] = do return []
     evalParams (p:ps) = do
@@ -193,6 +207,59 @@ evalExpr (ExprIs e1 e2) = do
   v2 <- evalExpr e2
   return $ ObjBool $ v1==v2
 
+
+evalExpr (SuperCall params) = do
+  c <- config
+  ctx <- pure $ configCtx c
+  addr <- evalExpr (ObjRef ObjThis)--pure $ ctxThis ctx
+  actuals <- evalParams params
+  Just obj <- lookupHeap addr
+  (mixin,method) <- pure $ ctxMet ctx
+  (mix, m) <- pure $ bindMethodSuper obj (mixin,method)
+  c <- config
+  env <- pure $ initLocals m actuals (initEnv m)
+  ctx <- pure $ Context addr (mix,method) --da m estrapolo il mixin attuale e il suo nome
+  put $ c {configEnv = env, configCtx = ctx}
+  evalInstr (methodBody m)
+  Right retval <- fmap configEnv config
+  h' <- fmap configHeap config
+  put $ c {configHeap = h'}
+  return retval
+  where
+    initLocals :: MixinMethod -> [Value] -> Environment -> Environment
+    initLocals met vs (Left env) =
+      let actuals = zip (map idName (methodParams met)) vs in
+        Left $ Map.union (Map.fromList actuals) env 
+    
+    initEnv :: MixinMethod -> Environment
+    initEnv met =
+      let localIds = (methodParams met ++ methodLocals met) in
+        Left $ Map.fromList $ map (\x -> (idName x, ObjNull)) localIds
+    
+    bindMethodSuper :: Object -> (String,String) -> (String, MixinMethod) --dovrebbe restituirmi sia il mixin attuale sia il method
+    bindMethodSuper obj (mixin,method) = (mixinName (last (filter (\x-> elem (method) (map (methodName) (mixinMethods x))) (until (objMixins obj) mixin []))), head (filter (\x -> methodName x == (method)) (mixinMethods (last (filter (\x-> elem (method) (map (methodName) (mixinMethods x))) (until (objMixins obj) mixin []))))))
+
+    --(until (objMixins obj) mixin [])
+
+    until :: [Mixin] -> String -> [Mixin] -> [Mixin]
+    until [] _ res = res
+    until (m:ms) n res = if (mixinName m == n) then res else (until ms n (res ++ [m])) 
+
+{-
+    head (filter (\x -> methodName x == (mixin ++ "." ++ method)) (mixinMethods (last (filter (\x-> elem (mixin ++ "." ++ method) (map (methodName) (mixinMethods x))) (objMixins obj)))))
+                                  
+
+      let mix:_ = filter ((== mixin).mixinName) (objMixins obj) in
+        head $ filter ((== (mixin ++ "." ++ method)).methodName) (mixinMethods mix)
+-}    
+    evalParams :: [Expression] -> Eval [Value]
+    evalParams [] = do return []
+    evalParams (p:ps) = do
+      v <- evalExpr p
+      vs <- evalParams ps
+      return (v:vs)
+
+
 --Native mixins and instances definitions
 
 nativeMethod name ret params locals code =
@@ -206,24 +273,24 @@ mixinBoolean = Mixin "Boolean" [] [] [metPrint, metNot, metAnd, metOr]
   where
     boolId x = Identifier x ["Boolean"]
 
-    metPrint = nativeMethod "print" ["Object"] [] [] (NativeIO natPrint)
+    metPrint = nativeMethod "Boolean.print" ["Object"] [] [] (NativeIO natPrint)
     natPrint c = do
       (c',ObjBool x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c
       print x
       (c'',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef ObjNull) c'
       return c''
 
-    metNot = nativeMethod "not" ["Boolean"] [] [] natNot
+    metNot = nativeMethod "Boolean.not" ["Boolean"] [] [] natNot
     natNot = Return $ ExprIs (ObjRef ObjThis) (ObjRef $ ObjBool False)
 
-    metAnd = nativeMethod "and" ["Boolean"] [boolId "b"] [] natAnd
+    metAnd = nativeMethod "Boolean.and" ["Boolean"] [boolId "b"] [] natAnd
     natAnd = If (ExprId "b")
                 (If (ObjRef ObjThis)
                     (Return $ ObjRef $ ObjBool True)
                     (Return $ ObjRef $ ObjBool False) )
                 (Return $ ObjRef $ ObjBool False)
 
-    metOr = nativeMethod "or" ["Boolean"] [boolId "b"] [] natOr
+    metOr = nativeMethod "Boolean.or" ["Boolean"] [boolId "b"] [] natOr
     natOr = If (ExprId "b")
                (Return $ ObjRef $ ObjBool True)
                (If (ObjRef ObjThis)
@@ -240,21 +307,21 @@ mixinInteger = Mixin "Integer" [] [] [metPrint,metAdd,metGt]
     intId x = Identifier x ["Integer"]
     boolId x = Identifier x ["Boolean"]    
 
-    metPrint = nativeMethod "print" ["Object"] [] [] (NativeIO natPrint)
+    metPrint = nativeMethod "Integer.print" ["Object"] [] [] (NativeIO natPrint)
     natPrint c = do
       (c',ObjInt x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c
       print x
       (c'',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef ObjNull) c'
       return c''
 
-    metAdd = nativeMethod "add" ["Integer"] [intId "n"] [] (NativeIO natAdd)
+    metAdd = nativeMethod "Integer.add" ["Integer"] [intId "n"] [] (NativeIO natAdd)
     natAdd c = do
       (c',ObjInt x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c            
       (c'',ObjInt y) <- runEvaluatorT (evalExpr $ ExprId "n") c'          
       (c''',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef $ ObjInt $ x+y) c''
       return c'''
 
-    metGt = nativeMethod "gt" ["Boolean"] [intId "n"] [] (NativeIO natGt)
+    metGt = nativeMethod "Integer.gt" ["Boolean"] [intId "n"] [] (NativeIO natGt)
     natGt c = do
       (c',ObjInt x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c            
       (c'',ObjInt y) <- runEvaluatorT (evalExpr $ ExprId "n") c'          
@@ -270,14 +337,14 @@ mixinString = Mixin "String" [] [] [metPrint,metAppend]
   where
     strId x = Identifier x ["String"]
 
-    metPrint = nativeMethod "print" ["Object"] [] [] (NativeIO natPrint)
+    metPrint = nativeMethod "String.print" ["Object"] [] [] (NativeIO natPrint)
     natPrint c = do
       (c',ObjString x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c
       putStrLn x
       (c'',_) <- runEvaluatorT (evalInstr $ Return $ ObjRef ObjNull) c'
       return c''
 
-    metAppend = nativeMethod "append" ["String"] [strId "s"] [] (NativeIO natAppend)
+    metAppend = nativeMethod "String.append" ["String"] [strId "s"] [] (NativeIO natAppend)
     natAppend c = do
       (c',ObjString x) <- runEvaluatorT (evalExpr $ ObjRef ObjThis) c            
       (c'',ObjString y) <- runEvaluatorT (evalExpr $ ExprId "s") c'          

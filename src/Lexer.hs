@@ -26,6 +26,10 @@ langDef =
                                      , "this"
                                      , "is"
                                      , "import"
+                                     , "super"
+                                     , "abstract"
+                                     , "implement"
+                                     , "override"
                                      ]          
            , Token.reservedOpNames = [ ";"
                                      , ":="

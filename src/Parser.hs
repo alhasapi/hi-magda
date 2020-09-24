@@ -32,7 +32,7 @@ mixinDecl =
      t <- typeExpr
      reserved "="
      fs <- many fieldDecl
-     ms <- many metDecl
+     ms <- many (metDecl name)
      reserved "end"
      return $ Mixin name t fs ms
   where
@@ -42,25 +42,56 @@ mixinDecl =
                    symbol ";"
                    return $ MixinField f t
 
-    metDecl = metDeclNew
-    metDeclNew =
+    metDecl name= try (metDeclNew name) <|> try (metDeclAbs name) <|> try metDeclOver <|> try metDeclImpl
+
+    metDeclNew mixinName =
       do reserved "new"
          t <- typeExpr
          name <- identifier
          ps <- parens $ sepBy localId (symbol ";")
          (vars,i) <- metBody
-         return $ MixinMethod ScopeNew name t ps vars i
+         return $ MixinMethod ScopeNew (mixinName ++ "." ++ name) t ps vars i
     metBody = do vars <- many $ do x <- localId; symbol ";"; return x
                  reserved "begin"
-                 i <- instruction
+                 i <- insConcat
                  reserved "end"
                  return (vars,i)
+
+    metDeclAbs mixinName =
+      do reserved "abstract"
+         t <- typeExpr
+         name <- identifier
+         ps <- parens $ sepBy localId (symbol ";")
+         symbol ";"
+         return $ MixinMethod ScopeAbs (mixinName ++ "." ++ name) t ps [] Skip
+
+    metDeclOver =
+      do reserved "override"
+         t <- typeExpr
+         name1 <- identifier
+         symbol "."
+         name2 <- identifier
+         ps <- parens $ sepBy localId (symbol ";")
+         (vars,i) <- metBody
+         return $ MixinMethod ScopeOver (name1 ++ "." ++ name2) t ps vars i
+
+    metDeclImpl =
+      do reserved "implement"
+         t <- typeExpr
+         name1 <- identifier
+         symbol "."
+         name2 <- identifier
+         ps <- parens $ sepBy localId (symbol ";")
+         (vars,i) <- metBody
+         return $ MixinMethod ScopeImpl (name1 ++ "." ++ name2) t ps vars i
 
 localId = do name <- identifier
              symbol ":"
              t <- typeExpr
              return $ Identifier name t
     
+
+
 --Instructions
 instruction' =
   try insIf
@@ -103,12 +134,17 @@ instruction' =
                   reserved "end"
                   return $ While e i
 
-instruction = do i1 <- instruction'
+insSkip = do symbol ";"
+             return Skip
+
+instruction = try insConcat <|> try insSkip
+
+insConcat =   do i1 <- instruction'
                  semi
-                 i2 <- optionMaybe instruction
+                 i2 <- optionMaybe insConcat
                  case i2 of
-                   Just i2' -> return $ Cons i1 i2'
-                   Nothing -> return i1
+                     Just i2' -> return $ Cons i1 i2'
+                     Nothing -> return i1
 
 
 --Expressions
@@ -126,6 +162,8 @@ value =
     reservedMap kw val = fmap (const $ ObjRef val) $ reserved kw
     objNew = do reserved "new"
                 types <- typeExpr
+                reserved "["
+                reserved "]"
                 return $ ExprNew types
 
 expr =
@@ -133,6 +171,7 @@ expr =
   <|> try exprDefer
   <|> try value
   <|> parens expr
+  <|> try superEpr
   where
     exprDefer = do v <- try value <|> parens expr
                    e <- exprDefer' v
@@ -143,8 +182,8 @@ expr =
                       defer <- identifier
                       ps <- optionMaybe exprParams
                       e <- pure $ case ps of
-                                    Just ps' -> ExprCall v mix defer ps'
-                                    Nothing  -> ExprField v mix defer
+                                    Just ps' -> ExprCall v mix (mix ++ "." ++ defer) ps'
+                                    Nothing  -> ExprField v mix (mix ++ "." ++ defer)
                       next <- optionMaybe $ (exprDefer' e)
                       case next of
                         Just e' -> do return e'
@@ -154,6 +193,20 @@ expr =
                 reserved "is"
                 e2 <- try exprDefer <|> try value <|> parens expr
                 return $ ExprIs e1 e2
+ 
+    superEpr = do reserved "super"
+                  ps <- optionMaybe exprParams
+                  e <- pure $ case ps of 
+                                Just ps' -> SuperCall ps'
+                                Nothing  -> SuperCall []
+                  return e
+
+                  --exprParams = parens $ sepBy expr (symbol ",")
+                  --ps <- parens $ sepBy expr (symbol ",")
+                 
+                  {-case ps of
+                       Just ps' -> return SuperCall ps'
+                       Nothing  -> return SuperCall [] -}
 
 
               

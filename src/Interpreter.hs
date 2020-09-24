@@ -33,7 +33,6 @@ runParams [] = do
   (c,()) <- runEvaluatorT evalInteractive initConfig
   return c
 
-
 runParams ("--help":[]) = do
   putStr help
   return initConfig
@@ -61,9 +60,13 @@ runParams (f:[]) = do
       putStrLn $ show x
       return initConfig
     Right p -> do
+      
       tc <- typeCheck (tcheckProgram p)
+      putStrLn("RIUSCITO");
+      --putStrLn(show $ programMain p)
       if tc            
         then do (c,()) <- runEvaluatorT (evalImports p >> evalProg p) initConfig 
+                putStrLn("RIUSCITO2");
                 return c
         else return initConfig
 

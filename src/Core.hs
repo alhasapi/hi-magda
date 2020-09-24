@@ -39,7 +39,8 @@ data Identifier = Identifier { idName :: String
   deriving (Show,Eq)
 
 --Instructions
-data Instruction  = AssignVar String Expression
+data Instruction  = Skip --aggiunta
+                  | AssignVar String Expression
                   | AssignField Expression String String Expression
                   | Return Expression
                   | While Expression Instruction
@@ -49,7 +50,9 @@ data Instruction  = AssignVar String Expression
                   | NativeIO (Config -> IO Config)
 
 instance Show Instruction where
-  show x = "<Code>"
+  show (IE e)= "<Code>:" ++ (show e)
+  show _= "<Code>"
+
 
 instance Eq Instruction where
   a == b = False
@@ -61,7 +64,12 @@ data Expression = ObjRef Value
                 | ExprCall Expression String String [Expression]
                 | ExprNew TypeExpr
                 | ExprIs Expression Expression
-  deriving (Show,Eq)
+                | SuperCall [Expression] --aggiunta
+  --deriving (Show,Eq)
+
+instance Show Expression where
+  show (ExprCall e s s2 e2) = s2
+  show _ = "<Expr>"
 
 data Value = ObjNull
            | ObjBool Bool
